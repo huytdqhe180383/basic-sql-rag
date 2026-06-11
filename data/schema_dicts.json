@@ -1,0 +1,144 @@
+{
+  "customers": {
+    "source_spec": {
+      "filename": "customers.csv",
+      "pk": [
+        "customer_id"
+      ],
+      "fk": [
+        "zip"
+      ],
+      "date_columns": [
+        "signup_date"
+      ],
+      "categorical_columns": [
+        "city",
+        "gender",
+        "age_group",
+        "acquisition_channel"
+      ],
+      "drop_columns": [
+        "city"
+      ],
+      "dtype": {
+        "customer_id": "Int32",
+        "zip": "Int32",
+        "city": "string",
+        "signup_date": "string",
+        "gender": "string",
+        "age_group": "string",
+        "acquisition_channel": "string"
+      }
+    },
+    "processed_columns": [
+      "customer_id",
+      "zip",
+      "signup_date",
+      "gender",
+      "age_group",
+      "acquisition_channel"
+    ],
+    "processed_dtypes": {
+      "customer_id": "Int32",
+      "zip": "Int32",
+      "signup_date": "datetime64[ns]",
+      "gender": "category",
+      "age_group": "category",
+      "acquisition_channel": "category"
+    }
+  },
+  "orders": {
+    "source_spec": {
+      "filename": "orders.csv",
+      "pk": [
+        "order_id"
+      ],
+      "fk": [
+        "customer_id",
+        "zip"
+      ],
+      "date_columns": [
+        "order_date"
+      ],
+      "categorical_columns": [
+        "order_status",
+        "payment_method",
+        "device_type",
+        "order_source"
+      ],
+      "drop_columns": [],
+      "dtype": {
+        "order_id": "Int32",
+        "order_date": "string",
+        "customer_id": "Int32",
+        "zip": "Int32",
+        "order_status": "string",
+        "payment_method": "string",
+        "device_type": "string",
+        "order_source": "string"
+      }
+    },
+    "processed_columns": [
+      "order_id",
+      "order_date",
+      "customer_id",
+      "zip",
+      "order_status",
+      "payment_method",
+      "device_type",
+      "order_source"
+    ],
+    "processed_dtypes": {
+      "order_id": "Int32",
+      "order_date": "datetime64[ns]",
+      "customer_id": "Int32",
+      "zip": "Int32",
+      "order_status": "category",
+      "payment_method": "category",
+      "device_type": "category",
+      "order_source": "category"
+    }
+  },
+  "order_items": {
+    "source_spec": {
+      "filename": "order_items.csv",
+      "pk": [],
+      "fk": [
+        "order_id",
+        "product_id"
+      ],
+      "date_columns": [],
+      "categorical_columns": [],
+      "drop_columns": [],
+      "dtype": {
+        "order_id": "Int32",
+        "product_id": "Int32",
+        "quantity": "Int16",
+        "unit_price": "Float64",
+        "discount_amount": "Float64",
+        "promo_id": "string",
+        "promo_id_2": "string"
+      }
+    },
+    "processed_columns": [
+      "order_item_id",
+      "order_id",
+      "product_id",
+      "quantity",
+      "unit_price",
+      "discount_amount",
+      "promo_id",
+      "promo_id_2"
+    ],
+    "processed_dtypes": {
+      "order_item_id": "int64",
+      "order_id": "Int32",
+      "product_id": "Int32",
+      "quantity": "Int16",
+      "unit_price": "Float64",
+      "discount_amount": "Float64",
+      "promo_id": "string",
+      "promo_id_2": "string"
+    }
+  }
+}
