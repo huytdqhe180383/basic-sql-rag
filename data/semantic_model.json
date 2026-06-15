@@ -1,0 +1,141 @@
+[
+  {
+    "semantic_name": "Customer Demographics",
+    "source_table": "customers",
+    "grain": "one row per customer",
+    "description": "Customer master data including demographics, signup info, and acquisition channel. Use for customer counts, signup analysis, and acquisition breakdowns.",
+    "columns": [
+      {"name": "customer_id", "type": "INTEGER", "description": "Unique customer identifier"},
+      {"name": "zip", "type": "INTEGER", "description": "Postal code for customer location, joins to geography.zip"},
+      {"name": "signup_date", "type": "DATE", "description": "Date the customer signed up"},
+      {"name": "gender", "type": "TEXT", "description": "Customer gender: male, female, other"},
+      {"name": "age_group", "type": "TEXT", "description": "Age bracket, e.g. 18-24, 25-34, 35-44, 45-54, 55+"},
+      {"name": "acquisition_channel", "type": "TEXT", "description": "How the customer was acquired: organic_search, social_media, paid_search, referral, etc."}
+    ],
+    "relations": [
+      {"from": "customers.customer_id", "to": "orders.customer_id", "type": "one_to_many"},
+      {"from": "customers.zip", "to": "geography.zip", "type": "many_to_one"}
+    ],
+    "question_families": ["customer_count", "signup_analysis", "acquisition_analysis", "demographics_breakdown"]
+  },
+  {
+    "semantic_name": "Order Transactions",
+    "source_table": "orders",
+    "grain": "one row per order",
+    "description": "Order-level transactional data. Contains order status, payment method, device type, order source, and order date. Use for order counting, status analysis, and channel breakdowns.",
+    "columns": [
+      {"name": "order_id", "type": "INTEGER", "description": "Unique order identifier"},
+      {"name": "order_date", "type": "DATE", "description": "Date the order was placed"},
+      {"name": "customer_id", "type": "INTEGER", "description": "Customer who placed the order, joins to customers.customer_id"},
+      {"name": "zip", "type": "INTEGER", "description": "Shipping postal code, joins to geography.zip"},
+      {"name": "order_status", "type": "TEXT", "description": "Current status: delivered, shipped, cancelled, returned, processing, etc."},
+      {"name": "payment_method", "type": "TEXT", "description": "Payment method: credit_card, cod, debit_card, wallet, etc."},
+      {"name": "device_type", "type": "TEXT", "description": "Device used to place order: mobile, desktop, tablet"},
+      {"name": "order_source", "type": "TEXT", "description": "Source of the order: app, web, paid_search, organic_search, social"}
+    ],
+    "relations": [
+      {"from": "orders.customer_id", "to": "customers.customer_id", "type": "many_to_one"},
+      {"from": "orders.zip", "to": "geography.zip", "type": "many_to_one"},
+      {"from": "orders.order_id", "to": "order_items.order_id", "type": "one_to_many"}
+    ],
+    "question_families": ["order_count", "order_status_analysis", "order_source_analysis", "device_analysis", "payment_analysis", "date_based_orders"]
+  },
+  {
+    "semantic_name": "Order Line Items",
+    "source_table": "order_items",
+    "grain": "one row per order line item",
+    "description": "Line-item detail for each order. Contains product, quantity, price, discount, and promo info. Use for revenue calculation, discount analysis, and promo tracking.",
+    "columns": [
+      {"name": "order_item_id", "type": "INTEGER", "description": "Unique line item identifier"},
+      {"name": "order_id", "type": "INTEGER", "description": "Parent order, joins to orders.order_id"},
+      {"name": "product_id", "type": "INTEGER", "description": "Product in this line item, joins to products.product_id"},
+      {"name": "quantity", "type": "INTEGER", "description": "Quantity ordered for this line item"},
+      {"name": "unit_price", "type": "NUMERIC(14,2)", "description": "Price per unit at time of order"},
+      {"name": "discount_amount", "type": "NUMERIC(14,2)", "description": "Discount applied to this line item"},
+      {"name": "promo_id", "type": "TEXT", "description": "Primary promo code applied, NULL or NO_PROMO if none"},
+      {"name": "promo_id_2", "type": "TEXT", "description": "Secondary promo code applied, may be NULL"}
+    ],
+    "relations": [
+      {"from": "order_items.order_id", "to": "orders.order_id", "type": "many_to_one"},
+      {"from": "order_items.product_id", "to": "products.product_id", "type": "many_to_one"}
+    ],
+    "question_families": ["revenue_calculation", "discount_analysis", "promo_analysis", "quantity_analysis"]
+  },
+  {
+    "semantic_name": "Product Catalog",
+    "source_table": "products",
+    "grain": "one row per product",
+    "description": "Product master data with attributes like category, segment, size, color, price, and cost. Use for product-level, category-level, or segment-level analysis.",
+    "columns": [
+      {"name": "product_id", "type": "INTEGER", "description": "Unique product identifier"},
+      {"name": "product_name", "type": "TEXT", "description": "Display name of the product"},
+      {"name": "category", "type": "TEXT", "description": "Product category, e.g. Electronics, Clothing"},
+      {"name": "segment", "type": "TEXT", "description": "Product segment within category, e.g. Premium, Budget"},
+      {"name": "size", "type": "TEXT", "description": "Product size, e.g. S, M, L, XL"},
+      {"name": "color", "type": "TEXT", "description": "Product color, e.g. Red, Blue, Black"},
+      {"name": "price", "type": "NUMERIC(14,2)", "description": "List price of the product"},
+      {"name": "cogs", "type": "NUMERIC(14,2)", "description": "Cost of goods sold for the product"}
+    ],
+    "relations": [
+      {"from": "products.product_id", "to": "order_items.product_id", "type": "one_to_many"},
+      {"from": "products.product_id", "to": "inventory.product_id", "type": "one_to_many"}
+    ],
+    "question_families": ["product_breakdown", "category_analysis", "segment_analysis", "product_attributes"]
+  },
+  {
+    "semantic_name": "Geography Lookup",
+    "source_table": "geography",
+    "grain": "one row per zip code",
+    "description": "Geographic lookup mapping zip codes to city, region, and district. Use for location-based breakdowns joined to customers or orders via zip.",
+    "columns": [
+      {"name": "zip", "type": "INTEGER", "description": "Postal code, primary key"},
+      {"name": "city", "type": "TEXT", "description": "City name"},
+      {"name": "region", "type": "TEXT", "description": "Region/state name"},
+      {"name": "district", "type": "TEXT", "description": "District or county name"}
+    ],
+    "relations": [
+      {"from": "geography.zip", "to": "customers.zip", "type": "one_to_many"},
+      {"from": "geography.zip", "to": "orders.zip", "type": "one_to_many"}
+    ],
+    "question_families": ["geography_breakdown", "city_analysis", "region_analysis"]
+  },
+  {
+    "semantic_name": "Daily Sales Aggregates",
+    "source_table": "sales",
+    "grain": "one row per date",
+    "description": "Pre-aggregated daily Revenue and COGS totals. Use this for quick daily total revenue/COGS queries that do not need customer, product, or order detail.",
+    "columns": [
+      {"name": "Date", "type": "DATE", "description": "Calendar date"},
+      {"name": "Revenue", "type": "NUMERIC(14,2)", "description": "Total revenue for the day"},
+      {"name": "COGS", "type": "NUMERIC(14,2)", "description": "Total cost of goods sold for the day"}
+    ],
+    "relations": [],
+    "question_families": ["daily_sales_aggregate", "daily_revenue", "daily_cogs"]
+  },
+  {
+    "semantic_name": "Inventory Snapshots",
+    "source_table": "inventory",
+    "grain": "one row per product per snapshot date",
+    "description": "Periodic inventory snapshots tracking stock levels, supply metrics, fill rates, and flags. Use for stock analysis, reorder analysis, and sell-through trends.",
+    "columns": [
+      {"name": "snapshot_date", "type": "DATE", "description": "Date of the inventory snapshot"},
+      {"name": "product_id", "type": "INTEGER", "description": "Product identifier, joins to products.product_id"},
+      {"name": "stock_on_hand", "type": "INTEGER", "description": "Units currently in stock"},
+      {"name": "units_received", "type": "INTEGER", "description": "Units received during the period"},
+      {"name": "units_sold", "type": "INTEGER", "description": "Units sold during the period"},
+      {"name": "stockout_days", "type": "INTEGER", "description": "Number of days product was out of stock"},
+      {"name": "days_of_supply", "type": "NUMERIC(14,2)", "description": "Estimated days of supply remaining"},
+      {"name": "fill_rate", "type": "NUMERIC(5,4)", "description": "Order fill rate (0 to 1)"},
+      {"name": "stockout_flag", "type": "BOOLEAN", "description": "True if product had a stockout in the period"},
+      {"name": "overstock_flag", "type": "BOOLEAN", "description": "True if product is overstocked"},
+      {"name": "reorder_flag", "type": "BOOLEAN", "description": "True if product needs reordering"},
+      {"name": "sell_through_rate", "type": "NUMERIC(5,4)", "description": "Sell-through rate (0 to 1)"},
+      {"name": "year", "type": "INTEGER", "description": "Year of the snapshot"},
+      {"name": "month", "type": "INTEGER", "description": "Month of the snapshot (1-12)"}
+    ],
+    "relations": [
+      {"from": "inventory.product_id", "to": "products.product_id", "type": "many_to_one"}
+    ],
+    "question_families": ["inventory_health", "stockout_analysis", "reorder_analysis", "fill_rate_analysis", "sell_through_analysis"]
+  }
+]

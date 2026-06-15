@@ -1,0 +1,246 @@
+[
+  {
+    "id": 1,
+    "question": "How many order were refunded in 2017 and which city has the most canceled order?",
+    "reference_sql": "SELECT\n          (SELECT COUNT(*) FROM orders WHERE order_status = 'returned' AND EXTRACT(YEAR FROM order_date) = 2017) AS refunded_2017_count,\n          (SELECT g.city FROM orders o JOIN geography g ON o.zip = g.zip WHERE o.order_status = 'cancelled' GROUP BY g.city ORDER BY COUNT(*) DESC LIMIT 1) AS most_cancelled_city;",
+    "answer": {
+      "columns": [
+        "refunded_2017_count",
+        "most_cancelled_city"
+      ],
+      "rows": [
+        [
+          4247,
+          "son tay"
+        ]
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "question": "Give me our top 3 most profitable products (total revenue minus cogs) ever, but exclude anything that is currently flagged for overstock.",
+    "reference_sql": "WITH latest_inventory AS (\n            SELECT product_id, overstock_flag \n            FROM inventory \n            WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM inventory)\n        )\n        SELECT p.product_name, SUM(oi.quantity * (oi.unit_price - p.cogs) - oi.discount_amount) AS total_profit\n        FROM order_items oi\n        JOIN products p ON oi.product_id = p.product_id\n        WHERE p.product_id NOT IN (\n            SELECT product_id FROM latest_inventory WHERE overstock_flag = TRUE\n        )\n        GROUP BY p.product_name\n        ORDER BY total_profit DESC\n        LIMIT 3;",
+    "answer": {
+      "columns": [
+        "product_name",
+        "total_profit"
+      ],
+      "rows": [
+        [
+          "SaigonFlex UM-43",
+          "114765623.80"
+        ],
+        [
+          "UrbanVN UE-05",
+          "69634365.21"
+        ],
+        [
+          "SaigonFlex UM-48",
+          "42282233.50"
+        ]
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "question": "Did we get more new folks from social media or organic search in the first half of 2020? And what was our total COGS for that period?",
+    "reference_sql": "SELECT \n          (SELECT acquisition_channel FROM customers WHERE signup_date >= '2020-01-01' AND signup_date <= '2020-06-30' AND acquisition_channel IN ('social_media', 'organic_search') GROUP BY acquisition_channel ORDER BY COUNT(*) DESC LIMIT 1) AS top_channel,\n          (SELECT SUM(COGS) FROM sales WHERE Date >= '2020-01-01' AND Date <= '2020-06-30') AS total_cogs_h1_2020;",
+    "answer": {
+      "columns": [
+        "top_channel",
+        "total_cogs_h1_2020"
+      ],
+      "rows": [
+        [
+          "organic_search",
+          "499076942.58"
+        ]
+      ]
+    }
+  },
+  {
+    "id": 4,
+    "question": "I need the region that brought in the most revenue through apple pay in 2022. Also, what was the average days of supply for all products at the end of 2022?",
+    "reference_sql": "SELECT \n          (SELECT g.region FROM orders o JOIN geography g ON o.zip = g.zip JOIN order_items oi ON o.order_id = oi.order_id WHERE o.payment_method = 'apple_pay' AND EXTRACT(YEAR FROM o.order_date) = 2022 GROUP BY g.region ORDER BY SUM(oi.quantity * oi.unit_price - oi.discount_amount) DESC LIMIT 1) AS top_apple_pay_region,\n          (SELECT ROUND(AVG(days_of_supply), 2) FROM inventory WHERE snapshot_date = '2022-12-31') AS avg_days_of_supply_end_2022;",
+    "answer": {
+      "columns": [
+        "top_apple_pay_region",
+        "avg_days_of_supply_end_2022"
+      ],
+      "rows": [
+        [
+          "east",
+          "1869.23"
+        ]
+      ]
+    }
+  },
+  {
+    "id": 5,
+    "question": "List the top 2 cities where guys buy the most stuff (total quantity) and their corresponding total revenue from guys.",
+    "reference_sql": "SELECT g.city, SUM(oi.quantity) AS total_quantity, SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS total_revenue \n        FROM customers c \n        JOIN orders o ON c.customer_id = o.customer_id \n        JOIN order_items oi ON o.order_id = oi.order_id \n        JOIN geography g ON o.zip = g.zip \n        WHERE c.gender = 'male' \n        GROUP BY g.city \n        ORDER BY total_quantity DESC \n        LIMIT 2;",
+    "answer": {
+      "columns": [
+        "city",
+        "total_quantity",
+        "total_revenue"
+      ],
+      "rows": [
+        [
+          "son tay",
+          52573,
+          "265113906.48"
+        ],
+        [
+          "ninh binh",
+          51550,
+          "264877856.80"
+        ]
+      ]
+    }
+  },
+  {
+    "id": 6,
+    "question": "Show the number of times we ran out of stock for products in the 'streetwear' category, grouped by month for 2022. Also include the average fill rate for those items.",
+    "reference_sql": "SELECT i.month, SUM(CASE WHEN i.stockout_flag = TRUE THEN 1 ELSE 0 END) AS stockout_count, ROUND(AVG(i.fill_rate), 4) AS avg_fill_rate \n        FROM inventory i \n        JOIN products p ON i.product_id = p.product_id \n        WHERE i.year = 2022 AND p.category = 'streetwear' \n        GROUP BY i.month \n        ORDER BY i.month;",
+    "answer": {
+      "columns": [
+        "month",
+        "stockout_count",
+        "avg_fill_rate"
+      ],
+      "rows": [
+        [
+          1,
+          114,
+          "0.9709"
+        ],
+        [
+          2,
+          145,
+          "0.9634"
+        ],
+        [
+          3,
+          168,
+          "0.9587"
+        ],
+        [
+          4,
+          172,
+          "0.9618"
+        ],
+        [
+          5,
+          157,
+          "0.9638"
+        ],
+        [
+          6,
+          159,
+          "0.9633"
+        ],
+        [
+          7,
+          141,
+          "0.9651"
+        ],
+        [
+          8,
+          149,
+          "0.9631"
+        ],
+        [
+          9,
+          136,
+          "0.9665"
+        ],
+        [
+          10,
+          125,
+          "0.9605"
+        ],
+        [
+          11,
+          123,
+          "0.9601"
+        ],
+        [
+          12,
+          134,
+          "0.9622"
+        ]
+      ]
+    }
+  },
+  {
+    "id": 7,
+    "question": "Which acquisition channel brings in the most folks who buy using Apple Pay, and what's the most common age bracket for those specific buyers?",
+    "reference_sql": "SELECT c.acquisition_channel, MODE() WITHIN GROUP (ORDER BY c.age_group) AS most_common_age_group \n        FROM customers c \n        JOIN orders o ON c.customer_id = o.customer_id \n        WHERE o.payment_method = 'apple_pay' \n        GROUP BY c.acquisition_channel \n        ORDER BY COUNT(DISTINCT c.customer_id) DESC \n        LIMIT 1;",
+    "answer": {
+      "columns": [
+        "acquisition_channel",
+        "most_common_age_group"
+      ],
+      "rows": [
+        [
+          "organic_search",
+          "25-34"
+        ]
+      ]
+    }
+  },
+  {
+    "id": 8,
+    "question": "Find the district with the highest refund rate (returned orders / total orders). How much revenue did we lose to those returns?",
+    "reference_sql": "SELECT g.district,\n               COUNT(CASE WHEN o.order_status = 'returned' THEN 1 END)::NUMERIC / NULLIF(COUNT(*), 0) AS return_rate,\n               SUM(CASE WHEN o.order_status = 'returned' THEN oi.quantity * oi.unit_price - oi.discount_amount ELSE 0 END) AS lost_revenue\n        FROM orders o\n        JOIN geography g ON o.zip = g.zip\n        JOIN order_items oi ON o.order_id = oi.order_id\n        GROUP BY g.district\n        ORDER BY return_rate DESC\n        LIMIT 1;",
+    "answer": {
+      "columns": [
+        "district",
+        "return_rate",
+        "lost_revenue"
+      ],
+      "rows": [
+        [
+          "district #24",
+          "0.06072263342423061940",
+          "26210601.64"
+        ]
+      ]
+    }
+  },
+  {
+    "id": 9,
+    "question": "What's the average sell-through rate for our most heavily discounted product category in the last recorded inventory snapshot?",
+    "reference_sql": "WITH top_category AS (\n            SELECT p.category\n            FROM order_items oi\n            JOIN products p ON oi.product_id = p.product_id\n            GROUP BY p.category\n            ORDER BY AVG(oi.discount_amount) DESC\n            LIMIT 1\n        )\n        SELECT t.category, ROUND(AVG(i.sell_through_rate), 4) AS avg_sell_through_rate\n        FROM inventory i\n        JOIN products p ON i.product_id = p.product_id\n        JOIN top_category t ON p.category = t.category\n        WHERE i.snapshot_date = (SELECT MAX(snapshot_date) FROM inventory)\n        GROUP BY t.category;",
+    "answer": {
+      "columns": [
+        "category",
+        "avg_sell_through_rate"
+      ],
+      "rows": [
+        [
+          "streetwear",
+          "0.1143"
+        ]
+      ]
+    }
+  },
+  {
+    "id": 10,
+    "question": "We're looking at folks who signed up in 2018. Which source gave us the most loyal buyers (most orders per person), and what's their favorite color of stuff to buy?",
+    "reference_sql": "WITH loyal_channel AS (\n            SELECT c.acquisition_channel\n            FROM customers c\n            JOIN orders o ON c.customer_id = o.customer_id\n            WHERE EXTRACT(YEAR FROM c.signup_date) = 2018\n            GROUP BY c.acquisition_channel\n            ORDER BY COUNT(o.order_id)::NUMERIC / NULLIF(COUNT(DISTINCT c.customer_id), 0) DESC\n            LIMIT 1\n        )\n        SELECT l.acquisition_channel, MODE() WITHIN GROUP (ORDER BY p.color) AS favorite_color\n        FROM customers c\n        JOIN orders o ON c.customer_id = o.customer_id\n        JOIN order_items oi ON o.order_id = oi.order_id\n        JOIN products p ON oi.product_id = p.product_id\n        JOIN loyal_channel l ON c.acquisition_channel = l.acquisition_channel\n        WHERE EXTRACT(YEAR FROM c.signup_date) = 2018\n        GROUP BY l.acquisition_channel;",
+    "answer": {
+      "columns": [
+        "acquisition_channel",
+        "favorite_color"
+      ],
+      "rows": [
+        [
+          "direct",
+          "purple"
+        ]
+      ]
+    }
+  }
+]

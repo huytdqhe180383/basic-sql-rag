@@ -2,42 +2,21 @@
   "customers": {
     "source_spec": {
       "filename": "customers.csv",
-      "pk": [
-        "customer_id"
-      ],
-      "fk": [
-        "zip"
-      ],
-      "date_columns": [
-        "signup_date"
-      ],
-      "categorical_columns": [
-        "city",
-        "gender",
-        "age_group",
-        "acquisition_channel"
-      ],
-      "drop_columns": [
-        "city"
-      ],
+      "pk": ["customer_id"],
+      "fk": ["zip"],
+      "date_columns": ["signup_date"],
+      "categorical_columns": ["gender", "age_group", "acquisition_channel"],
+      "drop_columns": [],
       "dtype": {
         "customer_id": "Int32",
         "zip": "Int32",
-        "city": "string",
         "signup_date": "string",
         "gender": "string",
         "age_group": "string",
         "acquisition_channel": "string"
       }
     },
-    "processed_columns": [
-      "customer_id",
-      "zip",
-      "signup_date",
-      "gender",
-      "age_group",
-      "acquisition_channel"
-    ],
+    "processed_columns": ["customer_id", "zip", "signup_date", "gender", "age_group", "acquisition_channel"],
     "processed_dtypes": {
       "customer_id": "Int32",
       "zip": "Int32",
@@ -50,22 +29,10 @@
   "orders": {
     "source_spec": {
       "filename": "orders.csv",
-      "pk": [
-        "order_id"
-      ],
-      "fk": [
-        "customer_id",
-        "zip"
-      ],
-      "date_columns": [
-        "order_date"
-      ],
-      "categorical_columns": [
-        "order_status",
-        "payment_method",
-        "device_type",
-        "order_source"
-      ],
+      "pk": ["order_id"],
+      "fk": ["customer_id", "zip"],
+      "date_columns": ["order_date"],
+      "categorical_columns": ["order_status", "payment_method", "device_type", "order_source"],
       "drop_columns": [],
       "dtype": {
         "order_id": "Int32",
@@ -78,16 +45,7 @@
         "order_source": "string"
       }
     },
-    "processed_columns": [
-      "order_id",
-      "order_date",
-      "customer_id",
-      "zip",
-      "order_status",
-      "payment_method",
-      "device_type",
-      "order_source"
-    ],
+    "processed_columns": ["order_id", "order_date", "customer_id", "zip", "order_status", "payment_method", "device_type", "order_source"],
     "processed_dtypes": {
       "order_id": "Int32",
       "order_date": "datetime64[ns]",
@@ -102,15 +60,13 @@
   "order_items": {
     "source_spec": {
       "filename": "order_items.csv",
-      "pk": [],
-      "fk": [
-        "order_id",
-        "product_id"
-      ],
+      "pk": ["order_item_id"],
+      "fk": ["order_id", "product_id"],
       "date_columns": [],
       "categorical_columns": [],
       "drop_columns": [],
       "dtype": {
+        "order_item_id": "int64",
         "order_id": "Int32",
         "product_id": "Int32",
         "quantity": "Int16",
@@ -120,16 +76,7 @@
         "promo_id_2": "string"
       }
     },
-    "processed_columns": [
-      "order_item_id",
-      "order_id",
-      "product_id",
-      "quantity",
-      "unit_price",
-      "discount_amount",
-      "promo_id",
-      "promo_id_2"
-    ],
+    "processed_columns": ["order_item_id", "order_id", "product_id", "quantity", "unit_price", "discount_amount", "promo_id", "promo_id_2"],
     "processed_dtypes": {
       "order_item_id": "int64",
       "order_id": "Int32",
@@ -139,6 +86,124 @@
       "discount_amount": "Float64",
       "promo_id": "string",
       "promo_id_2": "string"
+    }
+  },
+  "products": {
+    "source_spec": {
+      "filename": "products.csv",
+      "pk": ["product_id"],
+      "fk": [],
+      "date_columns": [],
+      "categorical_columns": ["category", "segment", "size", "color"],
+      "drop_columns": [],
+      "dtype": {
+        "product_id": "Int32",
+        "product_name": "string",
+        "category": "string",
+        "segment": "string",
+        "size": "string",
+        "color": "string",
+        "price": "Float64",
+        "cogs": "Float64"
+      }
+    },
+    "processed_columns": ["product_id", "product_name", "category", "segment", "size", "color", "price", "cogs"],
+    "processed_dtypes": {
+      "product_id": "Int32",
+      "product_name": "string",
+      "category": "category",
+      "segment": "category",
+      "size": "category",
+      "color": "category",
+      "price": "Float64",
+      "cogs": "Float64"
+    }
+  },
+  "geography": {
+    "source_spec": {
+      "filename": "geography.csv",
+      "pk": ["zip"],
+      "fk": [],
+      "date_columns": [],
+      "categorical_columns": ["city", "region", "district"],
+      "drop_columns": [],
+      "dtype": {
+        "zip": "Int32",
+        "city": "string",
+        "region": "string",
+        "district": "string"
+      }
+    },
+    "processed_columns": ["zip", "city", "region", "district"],
+    "processed_dtypes": {
+      "zip": "Int32",
+      "city": "category",
+      "region": "category",
+      "district": "category"
+    }
+  },
+  "sales": {
+    "source_spec": {
+      "filename": "sales.csv",
+      "pk": [],
+      "fk": [],
+      "date_columns": ["Date"],
+      "categorical_columns": [],
+      "drop_columns": [],
+      "dtype": {
+        "Date": "string",
+        "Revenue": "Float64",
+        "COGS": "Float64"
+      }
+    },
+    "processed_columns": ["Date", "Revenue", "COGS"],
+    "processed_dtypes": {
+      "Date": "datetime64[ns]",
+      "Revenue": "Float64",
+      "COGS": "Float64"
+    }
+  },
+  "inventory": {
+    "source_spec": {
+      "filename": "inventory.csv",
+      "pk": [],
+      "fk": ["product_id"],
+      "date_columns": ["snapshot_date"],
+      "categorical_columns": ["stockout_flag", "overstock_flag", "reorder_flag"],
+      "drop_columns": [],
+      "dtype": {
+        "snapshot_date": "string",
+        "product_id": "Int32",
+        "stock_on_hand": "Int32",
+        "units_received": "Int32",
+        "units_sold": "Int32",
+        "stockout_days": "Int32",
+        "days_of_supply": "Float64",
+        "fill_rate": "Float64",
+        "stockout_flag": "bool",
+        "overstock_flag": "bool",
+        "reorder_flag": "bool",
+        "sell_through_rate": "Float64",
+        "year": "Int32",
+        "month": "Int32"
+      }
+    },
+    "processed_columns": ["snapshot_date", "product_id", "stock_on_hand", "units_received", "units_sold", "stockout_days", "days_of_supply", "fill_rate", "stockout_flag", "overstock_flag", "reorder_flag", "sell_through_rate", "year", "month"],
+    "processed_dtypes": {
+      "snapshot_date": "datetime64[ns]",
+      "product_id": "Int32",
+      "stock_on_hand": "Int32",
+      "units_received": "Int32",
+      "units_sold": "Int32",
+      "stockout_days": "Int32",
+      "days_of_supply": "Float64",
+      "fill_rate": "Float64",
+      "stockout_flag": "bool",
+      "overstock_flag": "bool",
+      "reorder_flag": "bool",
+      "sell_through_rate": "Float64",
+      "year": "Int32",
+      "month": "Int32"
     }
   }
 }

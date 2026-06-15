@@ -6,8 +6,7 @@ import psycopg2
 from dotenv import load_dotenv
 from openai import OpenAI
 
-
-SCHEMA_PATH = "data/schema_llm.txt"
+from retriever import retrieve_context
 
 
 SYSTEM_PROMPT = dedent("""\
@@ -34,6 +33,7 @@ RETRY_PROMPT = dedent("""\
 """).strip()
 
 MAX_RETRIES = 3
+REQUEST_TIMEOUT = 30  # seconds
 
 
 def clean_sql(raw: str) -> str:
@@ -83,6 +83,28 @@ def format_results(columns: list[str], rows: list[tuple]) -> str:
     return "\n".join(lines)
 
 
+def _build_prompt(question: str) -> str:
+    """Build the LLM prompt using retrieved context instead of the full schema dump."""
+    context = retrieve_context(question)
+    schema_text = context["prompt_context"]["schema_text"]
+    example_text = context["prompt_context"].get("example_text", "")
+
+    sections = ["RELEVANT SCHEMA:", schema_text]
+    if example_text:
+        sections.append("EXAMPLE QUERIES:")
+        sections.append(example_text)
+    sections.append(f"QUESTION: {question}")
+    sections.append("SQL:")
+
+    return "\n\n".join(sections)
+
+
+def _build_retry_prompt(base_prompt: str, error: str, failed_sql: str) -> str:
+    """Build a correction prompt while retaining the retrieved context."""
+    correction = RETRY_PROMPT.format(error=error, failed_sql=failed_sql)
+    return f"{base_prompt}\n\n{correction}\n\nSQL:"
+
+
 def ask_database(question: str) -> tuple[str, str | None]:
     """Convert a natural-language question to SQL, execute it, and return (answer, sql)."""
     load_dotenv(override=True)
@@ -101,10 +123,9 @@ def ask_database(question: str) -> tuple[str, str | None]:
     pg_dbname = os.getenv("PGDATABASE", "postgres")
 
     client = OpenAI(api_key=api_key, base_url=api_base)
-    with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
-        schema_text = f.read()
 
-    prompt = f"{schema_text}\n\nQuestion: {question}\n\nSQL:"
+    base_prompt = _build_prompt(question)
+    prompt = base_prompt
 
     retries = 0
     last_sql = ""
@@ -118,8 +139,12 @@ def ask_database(question: str) -> tuple[str, str | None]:
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0,
+                timeout=REQUEST_TIMEOUT,
             )
         except Exception as e:
+            error_msg = str(e)
+            if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                return ("Request timed out after 30s. Please try again.", None)
             return (f"ERROR: LLM API call failed: {e}", None)
 
         sql = clean_sql(response.choices[0].message.content)
@@ -146,8 +171,11 @@ def ask_database(question: str) -> tuple[str, str | None]:
             retries += 1
             if retries > MAX_RETRIES:
                 break
-            prompt = RETRY_PROMPT.format(error=str(e.pgerror or e), failed_sql=sql)
-            prompt += "\n\nSQL:"
+            prompt = _build_retry_prompt(
+                base_prompt,
+                error=str(e.pgerror or e),
+                failed_sql=sql,
+            )
 
         except Exception as e:
             return (f"ERROR: {e}", None)
