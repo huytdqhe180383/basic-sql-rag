@@ -1,0 +1,167 @@
+{
+  "semantic_name": "Geography Lookup",
+  "source_table": "geography",
+  "grain": "one row per zip code",
+  "description": "Geographic lookup mapping zip codes to city, region, and district. Use for location-based breakdowns joined to customers or orders via zip.",
+  "columns": [
+    {
+      "name": "zip",
+      "type": "INTEGER",
+      "description": "Postal code, primary key",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 39948,
+        "sample_values": [
+          "15201",
+          "15202",
+          "15203",
+          "15204",
+          "15205"
+        ],
+        "min": 1.0,
+        "max": 99950.0
+      }
+    },
+    {
+      "name": "city",
+      "type": "TEXT",
+      "description": "City name",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 42,
+        "sample_values": [
+          "hai phong",
+          "phu ly",
+          "viet tri",
+          "bac giang",
+          "lao cai"
+        ],
+        "top_values": [
+          {
+            "value": "cam pha",
+            "count": 1403
+          },
+          {
+            "value": "phu ly",
+            "count": 1399
+          },
+          {
+            "value": "thai nguyen",
+            "count": 1394
+          },
+          {
+            "value": "hanoi",
+            "count": 1376
+          },
+          {
+            "value": "nam dinh",
+            "count": 1370
+          }
+        ]
+      }
+    },
+    {
+      "name": "region",
+      "type": "TEXT",
+      "description": "Region/state name",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 3,
+        "sample_values": [
+          "east",
+          "central",
+          "west"
+        ],
+        "top_values": [
+          {
+            "value": "east",
+            "count": 18929
+          },
+          {
+            "value": "central",
+            "count": 14512
+          },
+          {
+            "value": "west",
+            "count": 6507
+          }
+        ]
+      }
+    },
+    {
+      "name": "district",
+      "type": "TEXT",
+      "description": "District or county name",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 39,
+        "sample_values": [
+          "district #13",
+          "district #04",
+          "district #06",
+          "district #05",
+          "district #03"
+        ],
+        "top_values": [
+          {
+            "value": "district #25",
+            "count": 1597
+          },
+          {
+            "value": "district #30",
+            "count": 1518
+          },
+          {
+            "value": "district #19",
+            "count": 1513
+          },
+          {
+            "value": "district #24",
+            "count": 1511
+          },
+          {
+            "value": "district #07",
+            "count": 1492
+          }
+        ]
+      }
+    }
+  ],
+  "relations": [
+    {
+      "from": "geography.zip",
+      "to": "customers.zip",
+      "type": "one_to_many"
+    },
+    {
+      "from": "geography.zip",
+      "to": "orders.zip",
+      "type": "one_to_many"
+    }
+  ],
+  "question_families": [
+    "geography_breakdown",
+    "city_analysis",
+    "region_analysis"
+  ],
+  "sample_rows": [
+    {
+      "zip": "15201",
+      "city": "hai phong",
+      "region": "east",
+      "district": "district #13"
+    },
+    {
+      "zip": "15202",
+      "city": "phu ly",
+      "region": "east",
+      "district": "district #13"
+    },
+    {
+      "zip": "15203",
+      "city": "viet tri",
+      "region": "east",
+      "district": "district #13"
+    }
+  ]
+}

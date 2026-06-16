@@ -28,29 +28,53 @@ PGDATABASE=postgres
 
 ### 3. Build the retrieval indices
 
-```bash
-python build_index.py
+```powershell
+$env:PYTHONPATH="src"
+python -m beacon.indexing
 ```
 
 This creates separate schema and few-shot indices under `data/indices/`.
 
 ### 4. Load the data
 
-Run `sql/00_simple_schema.sql`, then import the CSVs from `data/processed/` into PostgreSQL.
+Run the loader after PostgreSQL is available:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m beacon.load_db
+```
 
 ### 5. Launch the web UI
 
-```bash
-python app.py
+```powershell
+$env:PYTHONPATH="src"
+python -m beacon.ui
 ```
 
 Open `http://127.0.0.1:7860` in your browser.
 
 ### CLI mode
 
-```bash
-python pipeline.py "How many orders were placed last month?"
+```powershell
+$env:PYTHONPATH="src"
+python -m beacon.pipeline "How many orders were placed last month?"
 ```
+
+## Source Layout
+
+The implementation lives under `src/beacon/` as a small set of modules:
+
+- `src/beacon/pipeline.py` for question splitting, prompting, SQL generation, and answers
+- `src/beacon/retrieval.py` for question understanding, schema retrieval, and coverage checks
+- `src/beacon/sql.py` for SQL validation, execution, and result formatting
+- `src/beacon/indexing.py` for semantic profiles and vector index building
+- `src/beacon/config.py` for paths, environment, and database settings
+- `src/beacon/ui.py` for the Gradio interface
+- `src/beacon/load_db.py` for loading processed CSVs into PostgreSQL
+
+There are no duplicate root-level wrapper scripts; run the package modules with `PYTHONPATH=src` as shown above.
+
+`data/semantic_model/` is the main semantic layer. It has one JSON file per table, each with descriptions, relations, three sample rows, and compact column profiles such as min/max/mean, date ranges, null counts, distinct counts, and common categorical values.
 
 ## Database Schema
 
@@ -73,5 +97,5 @@ Key relationships connect customers to orders, orders to line items, line items 
 3. Schema retrieval expands until the required context is covered.
 4. Matching example queries are added as optional prompt enrichment.
 5. The covered prompt is sent to an OpenAI-compatible LLM.
-6. The generated `SELECT` query runs against PostgreSQL with up to three retries.
+6. The generated `SELECT` query is validated and runs against PostgreSQL.
 7. Results are displayed with the SQL that was executed.

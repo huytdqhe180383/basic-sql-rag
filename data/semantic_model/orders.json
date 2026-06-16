@@ -1,0 +1,279 @@
+{
+  "semantic_name": "Order Transactions",
+  "source_table": "orders",
+  "grain": "one row per order",
+  "description": "Order-level transactional data. Contains order status, payment method, device type, order source, and order date. Use for order counting, status analysis, and channel breakdowns.",
+  "columns": [
+    {
+      "name": "order_id",
+      "type": "INTEGER",
+      "description": "Unique order identifier",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 646945,
+        "sample_values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "6"
+        ],
+        "min": 1.0,
+        "max": 834397.0
+      }
+    },
+    {
+      "name": "order_date",
+      "type": "DATE",
+      "description": "Date the order was placed",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 3833,
+        "sample_values": [
+          "2012-07-04",
+          "2012-07-06",
+          "2012-07-05",
+          "2012-07-07",
+          "2012-07-08"
+        ],
+        "min": "2012-07-04",
+        "max": "2022-12-31"
+      }
+    },
+    {
+      "name": "customer_id",
+      "type": "INTEGER",
+      "description": "Customer who placed the order, joins to customers.customer_id",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 90246,
+        "sample_values": [
+          "58578",
+          "58621",
+          "58811",
+          "59453",
+          "57821"
+        ],
+        "min": 1.0,
+        "max": 157563.0
+      }
+    },
+    {
+      "name": "zip",
+      "type": "INTEGER",
+      "description": "Shipping postal code, joins to geography.zip",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 29932,
+        "sample_values": [
+          "1109",
+          "1330",
+          "1473",
+          "2360",
+          "2886"
+        ],
+        "min": 1001.0,
+        "max": 99950.0
+      }
+    },
+    {
+      "name": "order_status",
+      "type": "TEXT",
+      "description": "Current status: delivered, shipped, cancelled, returned, processing, etc.",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 6,
+        "sample_values": [
+          "delivered",
+          "returned",
+          "shipped",
+          "cancelled",
+          "paid"
+        ],
+        "top_values": [
+          {
+            "value": "delivered",
+            "count": 516716
+          },
+          {
+            "value": "cancelled",
+            "count": 59462
+          },
+          {
+            "value": "returned",
+            "count": 36142
+          },
+          {
+            "value": "shipped",
+            "count": 13773
+          },
+          {
+            "value": "paid",
+            "count": 13577
+          }
+        ]
+      }
+    },
+    {
+      "name": "payment_method",
+      "type": "TEXT",
+      "description": "Payment method: credit_card, cod, debit_card, wallet, etc.",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 5,
+        "sample_values": [
+          "credit_card",
+          "cod",
+          "paypal",
+          "apple_pay",
+          "bank_transfer"
+        ],
+        "top_values": [
+          {
+            "value": "credit_card",
+            "count": 356352
+          },
+          {
+            "value": "paypal",
+            "count": 97018
+          },
+          {
+            "value": "cod",
+            "count": 96681
+          },
+          {
+            "value": "apple_pay",
+            "count": 64763
+          },
+          {
+            "value": "bank_transfer",
+            "count": 32131
+          }
+        ]
+      }
+    },
+    {
+      "name": "device_type",
+      "type": "TEXT",
+      "description": "Device used to place order: mobile, desktop, tablet",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 3,
+        "sample_values": [
+          "desktop",
+          "mobile",
+          "tablet"
+        ],
+        "top_values": [
+          {
+            "value": "mobile",
+            "count": 291482
+          },
+          {
+            "value": "desktop",
+            "count": 258855
+          },
+          {
+            "value": "tablet",
+            "count": 96608
+          }
+        ]
+      }
+    },
+    {
+      "name": "order_source",
+      "type": "TEXT",
+      "description": "Source of the order: app, web, paid_search, organic_search, social",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 6,
+        "sample_values": [
+          "paid_search",
+          "direct",
+          "referral",
+          "email_campaign",
+          "organic_search"
+        ],
+        "top_values": [
+          {
+            "value": "organic_search",
+            "count": 181495
+          },
+          {
+            "value": "paid_search",
+            "count": 141652
+          },
+          {
+            "value": "social_media",
+            "count": 129710
+          },
+          {
+            "value": "email_campaign",
+            "count": 77572
+          },
+          {
+            "value": "referral",
+            "count": 64565
+          }
+        ]
+      }
+    }
+  ],
+  "relations": [
+    {
+      "from": "orders.customer_id",
+      "to": "customers.customer_id",
+      "type": "many_to_one"
+    },
+    {
+      "from": "orders.zip",
+      "to": "geography.zip",
+      "type": "many_to_one"
+    },
+    {
+      "from": "orders.order_id",
+      "to": "order_items.order_id",
+      "type": "one_to_many"
+    }
+  ],
+  "question_families": [
+    "order_count",
+    "order_status_analysis",
+    "order_source_analysis",
+    "device_analysis",
+    "payment_analysis",
+    "date_based_orders"
+  ],
+  "sample_rows": [
+    {
+      "order_id": "1",
+      "order_date": "2012-07-04",
+      "customer_id": "58578",
+      "zip": "1109",
+      "order_status": "delivered",
+      "payment_method": "credit_card",
+      "device_type": "desktop",
+      "order_source": "paid_search"
+    },
+    {
+      "order_id": "2",
+      "order_date": "2012-07-04",
+      "customer_id": "58621",
+      "zip": "1330",
+      "order_status": "returned",
+      "payment_method": "cod",
+      "device_type": "mobile",
+      "order_source": "paid_search"
+    },
+    {
+      "order_id": "3",
+      "order_date": "2012-07-04",
+      "customer_id": "58811",
+      "zip": "1473",
+      "order_status": "delivered",
+      "payment_method": "credit_card",
+      "device_type": "desktop",
+      "order_source": "direct"
+    }
+  ]
+}

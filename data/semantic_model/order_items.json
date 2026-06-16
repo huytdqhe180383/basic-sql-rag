@@ -1,0 +1,230 @@
+{
+  "semantic_name": "Order Line Items",
+  "source_table": "order_items",
+  "grain": "one row per order line item",
+  "description": "Line-item detail for each order. Contains product, quantity, price, discount, and promo info. Use for revenue calculation, discount analysis, and promo tracking.",
+  "columns": [
+    {
+      "name": "order_item_id",
+      "type": "INTEGER",
+      "description": "Unique line item identifier",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 714669,
+        "sample_values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "min": 1.0,
+        "max": 714669.0
+      }
+    },
+    {
+      "name": "order_id",
+      "type": "INTEGER",
+      "description": "Parent order, joins to orders.order_id",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 646945,
+        "sample_values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "6"
+        ],
+        "min": 1.0,
+        "max": 834397.0
+      }
+    },
+    {
+      "name": "product_id",
+      "type": "INTEGER",
+      "description": "Product in this line item, joins to products.product_id",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 1598,
+        "sample_values": [
+          "2400",
+          "609",
+          "396",
+          "635",
+          "1935"
+        ],
+        "min": 1.0,
+        "max": 2412.0
+      }
+    },
+    {
+      "name": "quantity",
+      "type": "INTEGER",
+      "description": "Quantity ordered for this line item",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 8,
+        "sample_values": [
+          "7",
+          "3",
+          "5",
+          "1",
+          "6"
+        ],
+        "min": 1.0,
+        "max": 8.0,
+        "mean": 4.496
+      }
+    },
+    {
+      "name": "unit_price",
+      "type": "NUMERIC(14,2)",
+      "description": "Price per unit at time of order",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 501330,
+        "sample_values": [
+          "1138.22",
+          "10166.25",
+          "11220.33",
+          "10639.25",
+          "1597.84"
+        ],
+        "min": 392.57,
+        "max": 43056.0,
+        "mean": 5114.6902
+      }
+    },
+    {
+      "name": "discount_amount",
+      "type": "NUMERIC(14,2)",
+      "description": "Discount applied to this line item",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 204449,
+        "sample_values": [
+          "0.0",
+          "1127.74",
+          "1312.2",
+          "269.54",
+          "183.5"
+        ],
+        "min": 0.0,
+        "max": 35235.47,
+        "mean": 1048.8874
+      }
+    },
+    {
+      "name": "promo_id",
+      "type": "TEXT",
+      "description": "Primary promo code applied, NULL or NO_PROMO if none",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 51,
+        "sample_values": [
+          "NO_PROMO",
+          "PROMO-0006",
+          "PROMO-0001",
+          "PROMO-0002",
+          "PROMO-0005"
+        ],
+        "top_values": [
+          {
+            "value": "NO_PROMO",
+            "count": 438353
+          },
+          {
+            "value": "PROMO-0014",
+            "count": 11451
+          },
+          {
+            "value": "PROMO-0010",
+            "count": 11345
+          },
+          {
+            "value": "PROMO-0004",
+            "count": 11126
+          },
+          {
+            "value": "PROMO-0020",
+            "count": 10121
+          }
+        ]
+      }
+    },
+    {
+      "name": "promo_id_2",
+      "type": "TEXT",
+      "description": "Secondary promo code applied, may be NULL",
+      "profile": {
+        "null_count": 714463,
+        "distinct_count": 2,
+        "sample_values": [
+          "PROMO-0015",
+          "PROMO-0025"
+        ],
+        "top_values": [
+          {
+            "value": "PROMO-0015",
+            "count": 132
+          },
+          {
+            "value": "PROMO-0025",
+            "count": 74
+          }
+        ]
+      }
+    }
+  ],
+  "relations": [
+    {
+      "from": "order_items.order_id",
+      "to": "orders.order_id",
+      "type": "many_to_one"
+    },
+    {
+      "from": "order_items.product_id",
+      "to": "products.product_id",
+      "type": "many_to_one"
+    }
+  ],
+  "question_families": [
+    "revenue_calculation",
+    "discount_analysis",
+    "promo_analysis",
+    "quantity_analysis"
+  ],
+  "sample_rows": [
+    {
+      "order_item_id": "1",
+      "order_id": "1",
+      "product_id": "2400",
+      "quantity": "7",
+      "unit_price": "1138.22",
+      "discount_amount": "0.0",
+      "promo_id": "NO_PROMO",
+      "promo_id_2": null
+    },
+    {
+      "order_item_id": "2",
+      "order_id": "2",
+      "product_id": "609",
+      "quantity": "7",
+      "unit_price": "10166.25",
+      "discount_amount": "0.0",
+      "promo_id": "NO_PROMO",
+      "promo_id_2": null
+    },
+    {
+      "order_item_id": "3",
+      "order_id": "3",
+      "product_id": "396",
+      "quantity": "3",
+      "unit_price": "11220.33",
+      "discount_amount": "0.0",
+      "promo_id": "NO_PROMO",
+      "promo_id_2": null
+    }
+  ]
+}
