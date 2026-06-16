@@ -1,0 +1,294 @@
+{
+  "semantic_name": "Product Catalog",
+  "source_table": "products",
+  "grain": "one row per product",
+  "description": "Product master data with attributes like category, segment, size, color, price, and cost. Use for product-level, category-level, or segment-level analysis.",
+  "columns": [
+    {
+      "name": "product_id",
+      "type": "INTEGER",
+      "description": "Unique product identifier",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 2412,
+        "sample_values": [
+          "536",
+          "537",
+          "538",
+          "539",
+          "540"
+        ],
+        "min": 1.0,
+        "max": 2412.0
+      }
+    },
+    {
+      "name": "product_name",
+      "type": "TEXT",
+      "description": "Display name of the product",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 2172,
+        "sample_values": [
+          "SaigonFlex UC-01",
+          "SaigonFlex UC-02",
+          "SaigonFlex UC-03",
+          "SaigonFlex UC-04",
+          "SaigonFlex UC-05"
+        ],
+        "top_values": [
+          {
+            "value": "VietMode RP-01",
+            "count": 3
+          },
+          {
+            "value": "VietMode RP-02",
+            "count": 3
+          },
+          {
+            "value": "VietMode RP-03",
+            "count": 3
+          },
+          {
+            "value": "VietMode RP-04",
+            "count": 3
+          },
+          {
+            "value": "VietMode RP-05",
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "category",
+      "type": "TEXT",
+      "description": "Product category, e.g. Electronics, Clothing",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 4,
+        "sample_values": [
+          "streetwear",
+          "casual",
+          "outdoor",
+          "genz"
+        ],
+        "top_values": [
+          {
+            "value": "streetwear",
+            "count": 1320
+          },
+          {
+            "value": "outdoor",
+            "count": 743
+          },
+          {
+            "value": "casual",
+            "count": 201
+          },
+          {
+            "value": "genz",
+            "count": 148
+          }
+        ]
+      }
+    },
+    {
+      "name": "segment",
+      "type": "TEXT",
+      "description": "Product segment within category, e.g. Premium, Budget",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 8,
+        "sample_values": [
+          "everyday",
+          "performance",
+          "balanced",
+          "standard",
+          "all-weather"
+        ],
+        "top_values": [
+          {
+            "value": "activewear",
+            "count": 598
+          },
+          {
+            "value": "everyday",
+            "count": 405
+          },
+          {
+            "value": "performance",
+            "count": 347
+          },
+          {
+            "value": "balanced",
+            "count": 306
+          },
+          {
+            "value": "standard",
+            "count": 262
+          }
+        ]
+      }
+    },
+    {
+      "name": "size",
+      "type": "TEXT",
+      "description": "Product size, e.g. S, M, L, XL",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 4,
+        "sample_values": [
+          "s",
+          "m",
+          "l",
+          "xl"
+        ],
+        "top_values": [
+          {
+            "value": "l",
+            "count": 603
+          },
+          {
+            "value": "m",
+            "count": 603
+          },
+          {
+            "value": "s",
+            "count": 603
+          },
+          {
+            "value": "xl",
+            "count": 603
+          }
+        ]
+      }
+    },
+    {
+      "name": "color",
+      "type": "TEXT",
+      "description": "Product color, e.g. Red, Blue, Black",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 10,
+        "sample_values": [
+          "green",
+          "silver",
+          "pink",
+          "yellow",
+          "red"
+        ],
+        "top_values": [
+          {
+            "value": "black",
+            "count": 242
+          },
+          {
+            "value": "orange",
+            "count": 242
+          },
+          {
+            "value": "blue",
+            "count": 241
+          },
+          {
+            "value": "green",
+            "count": 241
+          },
+          {
+            "value": "pink",
+            "count": 241
+          }
+        ]
+      }
+    },
+    {
+      "name": "price",
+      "type": "NUMERIC(14,2)",
+      "description": "List price of the product",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 1990,
+        "sample_values": [
+          "11059.65",
+          "9523.076012658228",
+          "15951.633157894736",
+          "15753.7172985782",
+          "15766.334536082471"
+        ],
+        "min": 9.0566,
+        "max": 40950.0,
+        "mean": 4928.2162
+      }
+    },
+    {
+      "name": "cogs",
+      "type": "NUMERIC(14,2)",
+      "description": "Cost of goods sold for the product",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 2381,
+        "sample_values": [
+          "9704.842875",
+          "5393.87025356962",
+          "11371.919278263158",
+          "8573.172953886256",
+          "14063.570406185569"
+        ],
+        "min": 5.1838,
+        "max": 38902.5,
+        "mean": 3868.3467
+      }
+    }
+  ],
+  "relations": [
+    {
+      "from": "products.product_id",
+      "to": "order_items.product_id",
+      "type": "one_to_many"
+    },
+    {
+      "from": "products.product_id",
+      "to": "inventory.product_id",
+      "type": "one_to_many"
+    }
+  ],
+  "question_families": [
+    "product_breakdown",
+    "category_analysis",
+    "segment_analysis",
+    "product_attributes"
+  ],
+  "sample_rows": [
+    {
+      "product_id": "536",
+      "product_name": "SaigonFlex UC-01",
+      "category": "streetwear",
+      "segment": "everyday",
+      "size": "s",
+      "color": "green",
+      "price": "11059.65",
+      "cogs": "9704.842875"
+    },
+    {
+      "product_id": "537",
+      "product_name": "SaigonFlex UC-02",
+      "category": "streetwear",
+      "segment": "everyday",
+      "size": "m",
+      "color": "silver",
+      "price": "9523.076012658228",
+      "cogs": "5393.87025356962"
+    },
+    {
+      "product_id": "538",
+      "product_name": "SaigonFlex UC-03",
+      "category": "streetwear",
+      "segment": "everyday",
+      "size": "l",
+      "color": "pink",
+      "price": "15951.633157894736",
+      "cogs": "11371.919278263158"
+    }
+  ]
+}

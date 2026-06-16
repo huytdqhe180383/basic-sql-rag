@@ -1,6 +1,6 @@
-# Beacon — Natural Language to SQL
+# Beacon - Natural Language to SQL
 
-Ask questions about your e-commerce data in plain English. Beacon uses an LLM to generate SQL queries, executes them against a PostgreSQL database, and returns formatted results.
+Ask questions about your e-commerce data in plain English. Beacon retrieves only the relevant schema context, asks an LLM to generate PostgreSQL, executes the query, and returns formatted results.
 
 ## Quick Start
 
@@ -26,40 +26,76 @@ PGPASSWORD=yourpassword
 PGDATABASE=postgres
 ```
 
-### 3. Load the data
+### 3. Build the retrieval indices
 
-Run the schema SQL to create the tables, then import the CSVs from `data/processed/` into PostgreSQL.
-
-### 4. Launch the web UI
-
-```bash
-python app.py
+```powershell
+$env:PYTHONPATH="src"
+python -m beacon.indexing
 ```
 
-Open `http://127.0.0.1:7860` in your browser. Ask any question about your data and Beacon will generate the SQL, execute it, and display both the answer and the query.
+This creates separate schema and few-shot indices under `data/indices/`.
+
+### 4. Load the data
+
+Run the loader after PostgreSQL is available:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m beacon.load_db
+```
+
+### 5. Launch the web UI
+
+```powershell
+$env:PYTHONPATH="src"
+python -m beacon.ui
+```
+
+Open `http://127.0.0.1:7860` in your browser.
 
 ### CLI mode
 
-You can also use the command line:
-
-```bash
-python pipeline.py "How many orders were placed last month?"
+```powershell
+$env:PYTHONPATH="src"
+python -m beacon.pipeline "How many orders were placed last month?"
 ```
+
+## Source Layout
+
+The implementation lives under `src/beacon/` as a small set of modules:
+
+- `src/beacon/pipeline.py` for question splitting, prompting, SQL generation, and answers
+- `src/beacon/retrieval.py` for question understanding, schema retrieval, and coverage checks
+- `src/beacon/sql.py` for SQL validation, execution, and result formatting
+- `src/beacon/indexing.py` for semantic profiles and vector index building
+- `src/beacon/config.py` for paths, environment, and database settings
+- `src/beacon/ui.py` for the Gradio interface
+- `src/beacon/load_db.py` for loading processed CSVs into PostgreSQL
+
+There are no duplicate root-level wrapper scripts; run the package modules with `PYTHONPATH=src` as shown above.
+
+`data/semantic_model/` is the main semantic layer. It has one JSON file per table, each with descriptions, relations, three sample rows, and compact column profiles such as min/max/mean, date ranges, null counts, distinct counts, and common categorical values.
 
 ## Database Schema
 
 | Table | Description | Key Columns |
 |---|---|---|
-| `customers` | Customer profiles | customer_id, zip, age_group, acquisition_channel |
-| `orders` | Order records | order_id, customer_id, order_status, payment_method |
+| `customers` | Customer profiles | customer_id, zip, signup_date, acquisition_channel |
+| `orders` | Order records | order_id, customer_id, zip, order_status, device_type |
 | `order_items` | Line items per order | order_item_id, order_id, product_id, quantity, unit_price |
+| `products` | Product catalog | product_id, category, segment, price, cogs |
+| `geography` | Zip-to-location lookup | zip, city, region, district |
+| `sales` | Daily revenue and COGS aggregates | Date, Revenue, COGS |
+| `inventory` | Product inventory snapshots | snapshot_date, product_id, fill_rate, reorder_flag |
 
-Relationships: `customers → orders → order_items` (1:N via foreign keys).
+Key relationships connect customers to orders, orders to line items, line items and inventory to products, and customer/order zip codes to geography.
 
 ## How It Works
 
-1. You type a question in the UI (or CLI)
-2. The prompt (schema + question) is sent to an OpenAI-compatible LLM
-3. The LLM generates a PostgreSQL `SELECT` query
-4. The query runs against your database — up to 3 automatic retries on error
-5. Results are formatted and displayed, along with the SQL that was executed
+1. You enter a question in the UI or CLI.
+2. Deterministic rules identify the required tables, columns, and joins.
+3. Schema retrieval expands until the required context is covered.
+4. Matching example queries are added as optional prompt enrichment.
+5. The covered prompt is sent to an OpenAI-compatible LLM.
+6. The generated `SELECT` query is validated and runs against PostgreSQL.
+7. Results are displayed with the SQL that was executed.

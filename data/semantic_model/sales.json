@@ -1,0 +1,87 @@
+{
+  "semantic_name": "Daily Sales Aggregates",
+  "source_table": "sales",
+  "grain": "one row per date",
+  "description": "Pre-aggregated daily Revenue and COGS totals. Use this for quick daily total revenue/COGS queries that do not need customer, product, or order detail.",
+  "columns": [
+    {
+      "name": "Date",
+      "type": "DATE",
+      "description": "Calendar date",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 3833,
+        "sample_values": [
+          "2012-07-04",
+          "2012-07-05",
+          "2012-07-06",
+          "2012-07-07",
+          "2012-07-08"
+        ],
+        "min": "2012-07-04",
+        "max": "2022-12-31"
+      }
+    },
+    {
+      "name": "Revenue",
+      "type": "NUMERIC(14,2)",
+      "description": "Total revenue for the day",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 3833,
+        "sample_values": [
+          "5123547.94",
+          "2751773.45",
+          "3054029.42",
+          "2667930.94",
+          "2360851.9"
+        ],
+        "min": 279813.94,
+        "max": 20905271.35,
+        "mean": 4286584.0296
+      }
+    },
+    {
+      "name": "COGS",
+      "type": "NUMERIC(14,2)",
+      "description": "Total cost of goods sold for the day",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 3833,
+        "sample_values": [
+          "3982991.19",
+          "2150580.23",
+          "2517632.84",
+          "2108246.62",
+          "1808622.79"
+        ],
+        "min": 236576.31,
+        "max": 16535857.67,
+        "mean": 3695134.495
+      }
+    }
+  ],
+  "relations": [],
+  "question_families": [
+    "daily_sales_aggregate",
+    "daily_revenue",
+    "daily_cogs"
+  ],
+  "sample_rows": [
+    {
+      "Date": "2012-07-04",
+      "Revenue": "5123547.94",
+      "COGS": "3982991.19"
+    },
+    {
+      "Date": "2012-07-05",
+      "Revenue": "2751773.45",
+      "COGS": "2150580.23"
+    },
+    {
+      "Date": "2012-07-06",
+      "Revenue": "3054029.42",
+      "COGS": "2517632.84"
+    }
+  ]
+}

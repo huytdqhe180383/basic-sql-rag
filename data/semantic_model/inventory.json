@@ -1,0 +1,326 @@
+{
+  "semantic_name": "Inventory Snapshots",
+  "source_table": "inventory",
+  "grain": "one row per product per snapshot date",
+  "description": "Periodic inventory snapshots tracking stock levels, supply metrics, fill rates, and flags. Use for stock analysis, reorder analysis, and sell-through trends.",
+  "columns": [
+    {
+      "name": "snapshot_date",
+      "type": "DATE",
+      "description": "Date of the inventory snapshot",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 126,
+        "sample_values": [
+          "2022-10-31",
+          "2022-11-30",
+          "2022-12-31",
+          "2016-04-30",
+          "2016-05-31"
+        ],
+        "min": "2012-07-31",
+        "max": "2022-12-31"
+      }
+    },
+    {
+      "name": "product_id",
+      "type": "INTEGER",
+      "description": "Product identifier, joins to products.product_id",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 1624,
+        "sample_values": [
+          "1",
+          "3",
+          "4",
+          "5",
+          "7"
+        ],
+        "min": 1.0,
+        "max": 2412.0
+      }
+    },
+    {
+      "name": "stock_on_hand",
+      "type": "INTEGER",
+      "description": "Units currently in stock",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 1895,
+        "sample_values": [
+          "3",
+          "35",
+          "36",
+          "37",
+          "39"
+        ],
+        "min": 3.0,
+        "max": 2673.0,
+        "mean": 189.2985
+      }
+    },
+    {
+      "name": "units_received",
+      "type": "INTEGER",
+      "description": "Units received during the period",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 360,
+        "sample_values": [
+          "1",
+          "13",
+          "11",
+          "8",
+          "4"
+        ],
+        "min": 1.0,
+        "max": 817.0,
+        "mean": 18.0468
+      }
+    },
+    {
+      "name": "units_sold",
+      "type": "INTEGER",
+      "description": "Units sold during the period",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 303,
+        "sample_values": [
+          "1",
+          "11",
+          "10",
+          "7",
+          "9"
+        ],
+        "min": 1.0,
+        "max": 670.0,
+        "mean": 15.4178
+      }
+    },
+    {
+      "name": "stockout_days",
+      "type": "INTEGER",
+      "description": "Number of days product was out of stock",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 29,
+        "sample_values": [
+          "2",
+          "1",
+          "0",
+          "3",
+          "4"
+        ],
+        "min": 0.0,
+        "max": 28.0,
+        "mean": 1.1606
+      }
+    },
+    {
+      "name": "days_of_supply",
+      "type": "NUMERIC(14,2)",
+      "description": "Estimated days of supply remaining",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 9289,
+        "sample_values": [
+          "90.0",
+          "95.5",
+          "108.0",
+          "158.6",
+          "130.0"
+        ],
+        "min": 5.2,
+        "max": 68100.0,
+        "mean": 912.6776
+      }
+    },
+    {
+      "name": "fill_rate",
+      "type": "NUMERIC(5,4)",
+      "description": "Order fill rate (0 to 1)",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 29,
+        "sample_values": [
+          "0.9333",
+          "0.9667",
+          "1.0",
+          "0.9",
+          "0.8667"
+        ],
+        "min": 0.0667,
+        "max": 1.0,
+        "mean": 0.9613
+      }
+    },
+    {
+      "name": "stockout_flag",
+      "type": "BOOLEAN",
+      "description": "True if product had a stockout in the period",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 2,
+        "sample_values": [
+          "1",
+          "0"
+        ],
+        "value_counts": {
+          "0": 19676,
+          "1": 40571
+        }
+      }
+    },
+    {
+      "name": "overstock_flag",
+      "type": "BOOLEAN",
+      "description": "True if product is overstocked",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 2,
+        "sample_values": [
+          "0",
+          "1"
+        ],
+        "value_counts": {
+          "0": 14305,
+          "1": 45942
+        }
+      }
+    },
+    {
+      "name": "reorder_flag",
+      "type": "BOOLEAN",
+      "description": "True if product needs reordering",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 1,
+        "sample_values": [
+          "0"
+        ],
+        "value_counts": {
+          "0": 60247
+        }
+      }
+    },
+    {
+      "name": "sell_through_rate",
+      "type": "NUMERIC(5,4)",
+      "description": "Sell-through rate (0 to 1)",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 4017,
+        "sample_values": [
+          "0.25",
+          "0.2391",
+          "0.2174",
+          "0.1591",
+          "0.1875"
+        ],
+        "min": 0.0004,
+        "max": 0.8531,
+        "mean": 0.1523
+      }
+    },
+    {
+      "name": "year",
+      "type": "INTEGER",
+      "description": "Year of the snapshot",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 11,
+        "sample_values": [
+          "2022",
+          "2016",
+          "2017",
+          "2018",
+          "2019"
+        ],
+        "min": 2012.0,
+        "max": 2022.0
+      }
+    },
+    {
+      "name": "month",
+      "type": "INTEGER",
+      "description": "Month of the snapshot (1-12)",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 12,
+        "sample_values": [
+          "10",
+          "11",
+          "12",
+          "4",
+          "5"
+        ],
+        "min": 1.0,
+        "max": 12.0
+      }
+    }
+  ],
+  "relations": [
+    {
+      "from": "inventory.product_id",
+      "to": "products.product_id",
+      "type": "many_to_one"
+    }
+  ],
+  "question_families": [
+    "inventory_health",
+    "stockout_analysis",
+    "reorder_analysis",
+    "fill_rate_analysis",
+    "sell_through_analysis"
+  ],
+  "sample_rows": [
+    {
+      "snapshot_date": "2022-10-31",
+      "product_id": "1",
+      "stock_on_hand": "3",
+      "units_received": "1",
+      "units_sold": "1",
+      "stockout_days": "2",
+      "days_of_supply": "90.0",
+      "fill_rate": "0.9333",
+      "stockout_flag": "1",
+      "overstock_flag": "0",
+      "reorder_flag": "0",
+      "sell_through_rate": "0.25",
+      "year": "2022",
+      "month": "10"
+    },
+    {
+      "snapshot_date": "2022-11-30",
+      "product_id": "1",
+      "stock_on_hand": "3",
+      "units_received": "1",
+      "units_sold": "1",
+      "stockout_days": "1",
+      "days_of_supply": "90.0",
+      "fill_rate": "0.9667",
+      "stockout_flag": "1",
+      "overstock_flag": "0",
+      "reorder_flag": "0",
+      "sell_through_rate": "0.25",
+      "year": "2022",
+      "month": "11"
+    },
+    {
+      "snapshot_date": "2022-12-31",
+      "product_id": "1",
+      "stock_on_hand": "3",
+      "units_received": "1",
+      "units_sold": "1",
+      "stockout_days": "1",
+      "days_of_supply": "90.0",
+      "fill_rate": "0.9667",
+      "stockout_flag": "1",
+      "overstock_flag": "0",
+      "reorder_flag": "0",
+      "sell_through_rate": "0.25",
+      "year": "2022",
+      "month": "12"
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+[
+  {
+    "question": "How many customers signed up in 2025?",
+    "sql": "SELECT COUNT(*) FROM customers WHERE signup_date >= '2025-01-01' AND signup_date <= '2025-12-31'",
+    "tables": ["customers"],
+    "pattern": "single_table_date_filter",
+    "question_families": ["customer_count", "signup_analysis"]
+  },
+  {
+    "question": "How many orders were placed via mobile last month?",
+    "sql": "SELECT COUNT(*) FROM orders WHERE device_type = 'mobile' AND order_date >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') AND order_date < date_trunc('month', CURRENT_DATE)",
+    "tables": ["orders"],
+    "pattern": "single_table_date_filter",
+    "question_families": ["order_count", "device_analysis"]
+  },
+  {
+    "question": "What is the total revenue by product category?",
+    "sql": "SELECT p.category, SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue FROM order_items oi JOIN products p ON oi.product_id = p.product_id GROUP BY p.category ORDER BY revenue DESC",
+    "tables": ["order_items", "products"],
+    "pattern": "revenue_calculation",
+    "question_families": ["revenue_calculation", "category_analysis"]
+  },
+  {
+    "question": "Which city generated the most revenue?",
+    "sql": "SELECT g.city, SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN geography g ON o.zip = g.zip GROUP BY g.city ORDER BY revenue DESC LIMIT 1",
+    "tables": ["order_items", "orders", "geography"],
+    "pattern": "geography_breakdown",
+    "question_families": ["geography_breakdown", "city_analysis", "revenue_calculation"]
+  },
+  {
+    "question": "How many orders has customer 12345 placed?",
+    "sql": "SELECT c.customer_id, COUNT(o.order_id) AS order_count FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE c.customer_id = 12345 GROUP BY c.customer_id",
+    "tables": ["orders", "customers"],
+    "pattern": "customer_orders_join",
+    "question_families": ["order_count", "customer_count"]
+  },
+  {
+    "question": "What are the top 5 products by total quantity sold?",
+    "sql": "SELECT p.product_name, SUM(oi.quantity) AS total_quantity FROM order_items oi JOIN products p ON oi.product_id = p.product_id GROUP BY p.product_name ORDER BY total_quantity DESC LIMIT 5",
+    "tables": ["order_items", "products"],
+    "pattern": "top_n",
+    "question_families": ["product_breakdown", "quantity_analysis"]
+  },
+  {
+    "question": "How many orders used a promo code last quarter?",
+    "sql": "SELECT COUNT(DISTINCT order_id) FROM order_items WHERE promo_id IS NOT NULL AND promo_id != 'NO_PROMO' AND order_id IN (SELECT order_id FROM orders WHERE order_date >= date_trunc('quarter', CURRENT_DATE - INTERVAL '3 months') AND order_date < date_trunc('quarter', CURRENT_DATE))",
+    "tables": ["order_items", "orders"],
+    "pattern": "orders_items_join",
+    "question_families": ["promo_analysis", "order_count"]
+  },
+  {
+    "question": "What is the average discount by payment method?",
+    "sql": "SELECT o.payment_method, AVG(oi.discount_amount) AS avg_discount FROM order_items oi JOIN orders o ON oi.order_id = o.order_id GROUP BY o.payment_method ORDER BY avg_discount DESC",
+    "tables": ["order_items", "orders"],
+    "pattern": "orders_items_join",
+    "question_families": ["discount_analysis", "payment_analysis"]
+  },
+  {
+    "question": "Show customer acquisition breakdown by channel for 2025.",
+    "sql": "SELECT acquisition_channel, COUNT(*) AS num_customers FROM customers WHERE signup_date >= '2025-01-01' AND signup_date <= '2025-12-31' GROUP BY acquisition_channel ORDER BY num_customers DESC",
+    "tables": ["customers"],
+    "pattern": "group_by_category",
+    "question_families": ["acquisition_analysis", "demographics_breakdown"]
+  },
+  {
+    "question": "How many orders by order status in the last 30 days?",
+    "sql": "SELECT order_status, COUNT(*) AS cnt FROM orders WHERE order_date >= CURRENT_DATE - INTERVAL '30 days' GROUP BY order_status ORDER BY cnt DESC",
+    "tables": ["orders"],
+    "pattern": "group_by_category",
+    "question_families": ["order_status_analysis", "date_based_orders"]
+  },
+  {
+    "question": "What is the revenue by product segment for the current year?",
+    "sql": "SELECT p.segment, SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue FROM order_items oi JOIN products p ON oi.product_id = p.product_id JOIN orders o ON oi.order_id = o.order_id WHERE o.order_date >= date_trunc('year', CURRENT_DATE) GROUP BY p.segment ORDER BY revenue DESC",
+    "tables": ["order_items", "products", "orders"],
+    "pattern": "revenue_calculation",
+    "question_families": ["revenue_calculation", "segment_analysis"]
+  },
+  {
+    "question": "What was daily Revenue and COGS last week?",
+    "sql": "SELECT Date, Revenue, COGS FROM sales WHERE Date >= CURRENT_DATE - INTERVAL '7 days' ORDER BY Date",
+    "tables": ["sales"],
+    "pattern": "daily_sales_aggregate",
+    "question_families": ["daily_sales_aggregate", "daily_revenue", "daily_cogs"]
+  },
+  {
+    "question": "What is the fill rate trend by month?",
+    "sql": "SELECT year, month, AVG(fill_rate) AS avg_fill_rate FROM inventory GROUP BY year, month ORDER BY year, month",
+    "tables": ["inventory"],
+    "pattern": "inventory_health",
+    "question_families": ["inventory_health", "fill_rate_analysis"]
+  },
+  {
+    "question": "Which products need reordering and what is their current stock on hand?",
+    "sql": "SELECT p.product_name, i.stock_on_hand, i.days_of_supply FROM inventory i JOIN products p ON i.product_id = p.product_id WHERE i.reorder_flag = TRUE AND i.snapshot_date = (SELECT MAX(snapshot_date) FROM inventory) ORDER BY i.days_of_supply ASC",
+    "tables": ["inventory", "products"],
+    "pattern": "inventory_health",
+    "question_families": ["inventory_health", "reorder_analysis", "product_breakdown"]
+  },
+  {
+    "question": "What is the sell-through rate by product category?",
+    "sql": "SELECT p.category, AVG(i.sell_through_rate) AS avg_sell_through FROM inventory i JOIN products p ON i.product_id = p.product_id GROUP BY p.category ORDER BY avg_sell_through DESC",
+    "tables": ["inventory", "products"],
+    "pattern": "product_breakdown",
+    "question_families": ["sell_through_analysis", "category_analysis"]
+  },
+  {
+    "question": "How many customers are there in each region?",
+    "sql": "SELECT g.region, COUNT(DISTINCT c.customer_id) AS num_customers FROM customers c JOIN geography g ON c.zip = g.zip GROUP BY g.region ORDER BY num_customers DESC",
+    "tables": ["customers", "geography"],
+    "pattern": "group_by_category",
+    "question_families": ["demographics_breakdown", "region_analysis"]
+  }
+]

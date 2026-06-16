@@ -1,0 +1,210 @@
+{
+  "semantic_name": "Customer Demographics",
+  "source_table": "customers",
+  "grain": "one row per customer",
+  "description": "Customer master data including demographics, signup info, and acquisition channel. Use for customer counts, signup analysis, and acquisition breakdowns.",
+  "columns": [
+    {
+      "name": "customer_id",
+      "type": "INTEGER",
+      "description": "Unique customer identifier",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 121930,
+        "sample_values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "min": 1.0,
+        "max": 157563.0
+      }
+    },
+    {
+      "name": "zip",
+      "type": "INTEGER",
+      "description": "Postal code for customer location, joins to geography.zip",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 31491,
+        "sample_values": [
+          "15201",
+          "15202",
+          "15203",
+          "15204",
+          "15205"
+        ],
+        "min": 1001.0,
+        "max": 99950.0
+      }
+    },
+    {
+      "name": "signup_date",
+      "type": "DATE",
+      "description": "Date the customer signed up",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 3941,
+        "sample_values": [
+          "2021-12-30",
+          "2013-12-27",
+          "2018-07-24",
+          "2017-11-29",
+          "2022-09-23"
+        ],
+        "min": "2012-01-17",
+        "max": "2022-12-31"
+      }
+    },
+    {
+      "name": "gender",
+      "type": "TEXT",
+      "description": "Customer gender: male, female, other",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 3,
+        "sample_values": [
+          "female",
+          "male",
+          "non-binary"
+        ],
+        "top_values": [
+          {
+            "value": "female",
+            "count": 59640
+          },
+          {
+            "value": "male",
+            "count": 57457
+          },
+          {
+            "value": "non-binary",
+            "count": 4833
+          }
+        ]
+      }
+    },
+    {
+      "name": "age_group",
+      "type": "TEXT",
+      "description": "Age bracket, e.g. 18-24, 25-34, 35-44, 45-54, 55+",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 5,
+        "sample_values": [
+          "35-44",
+          "45-54",
+          "18-24",
+          "55+",
+          "25-34"
+        ],
+        "top_values": [
+          {
+            "value": "25-34",
+            "count": 36342
+          },
+          {
+            "value": "35-44",
+            "count": 31920
+          },
+          {
+            "value": "45-54",
+            "count": 23172
+          },
+          {
+            "value": "18-24",
+            "count": 17039
+          },
+          {
+            "value": "55+",
+            "count": 13457
+          }
+        ]
+      }
+    },
+    {
+      "name": "acquisition_channel",
+      "type": "TEXT",
+      "description": "How the customer was acquired: organic_search, social_media, paid_search, referral, etc.",
+      "profile": {
+        "null_count": 0,
+        "distinct_count": 6,
+        "sample_values": [
+          "social_media",
+          "email_campaign",
+          "organic_search",
+          "referral",
+          "direct"
+        ],
+        "top_values": [
+          {
+            "value": "organic_search",
+            "count": 36450
+          },
+          {
+            "value": "social_media",
+            "count": 24448
+          },
+          {
+            "value": "paid_search",
+            "count": 24285
+          },
+          {
+            "value": "email_campaign",
+            "count": 14674
+          },
+          {
+            "value": "referral",
+            "count": 12270
+          }
+        ]
+      }
+    }
+  ],
+  "relations": [
+    {
+      "from": "customers.customer_id",
+      "to": "orders.customer_id",
+      "type": "one_to_many"
+    },
+    {
+      "from": "customers.zip",
+      "to": "geography.zip",
+      "type": "many_to_one"
+    }
+  ],
+  "question_families": [
+    "customer_count",
+    "signup_analysis",
+    "acquisition_analysis",
+    "demographics_breakdown"
+  ],
+  "sample_rows": [
+    {
+      "customer_id": "1",
+      "zip": "15201",
+      "signup_date": "2021-12-30",
+      "gender": "female",
+      "age_group": "35-44",
+      "acquisition_channel": "social_media"
+    },
+    {
+      "customer_id": "2",
+      "zip": "15201",
+      "signup_date": "2013-12-27",
+      "gender": "female",
+      "age_group": "45-54",
+      "acquisition_channel": "email_campaign"
+    },
+    {
+      "customer_id": "3",
+      "zip": "15201",
+      "signup_date": "2018-07-24",
+      "gender": "female",
+      "age_group": "18-24",
+      "acquisition_channel": "organic_search"
+    }
+  ]
+}
