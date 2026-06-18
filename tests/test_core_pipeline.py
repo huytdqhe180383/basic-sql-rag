@@ -3,7 +3,13 @@
 import pytest
 
 from beacon import pipeline
-from beacon.retrieval import assess_coverage, build_prompt, extract_question_needs
+from beacon.retrieval import (
+    assess_coverage,
+    build_prompt,
+    extract_question_needs,
+    matching_examples,
+    rank_docs,
+)
 from beacon.sql import SqlValidationError, validate_sql
 
 
@@ -11,6 +17,7 @@ def test_question_understanding_selects_relevant_schema_needs():
     signup = extract_question_needs("How many customers signed up in 2025?")
     assert signup["tables"] == {"customers"}
     assert "signup_date" in signup["columns"]
+    assert "single_table_date_filter" in signup["example_patterns"]
 
     revenue = extract_question_needs("What is total revenue by product category?")
     assert {"orders", "order_items", "products"}.issubset(revenue["tables"])
@@ -24,6 +31,17 @@ def test_question_understanding_selects_relevant_schema_needs():
     inventory = extract_question_needs("Show fill rate by month")
     assert inventory["tables"] == {"inventory"}
     assert {"fill_rate", "month"}.issubset(inventory["columns"])
+    assert "inventory_health" in inventory["example_patterns"]
+
+    city_revenue = extract_question_needs("Which city generated the most revenue?")
+    assert {"orders", "order_items", "geography"}.issubset(city_revenue["tables"])
+    assert "city" in city_revenue["columns"]
+    assert "orders.zip -> geography.zip" in city_revenue["relations"]
+    assert "geography_breakdown" in city_revenue["example_patterns"]
+
+    product_stock = extract_question_needs("Show products with the reorder flag")
+    assert {"inventory", "products"}.issubset(product_stock["tables"])
+    assert "orders" not in product_stock["tables"]
 
 
 def test_coverage_reports_missing_schema_parts():
@@ -71,6 +89,46 @@ def test_prompt_includes_schema_profiles_rows_and_examples():
     assert "SELECT * FROM products" in prompt
 
 
+def test_retrieval_ranks_plain_docs_with_visible_metadata():
+    docs = [
+        {
+            "text": "Table: orders\nColumns:\n  - order_id",
+            "metadata": {"table": "orders", "columns": ["order_id"]},
+        },
+        {
+            "text": "Table: products\nColumns:\n  - category",
+            "metadata": {"table": "products", "columns": ["category"]},
+        },
+    ]
+    needs = {
+        "tables": {"products"},
+        "columns": {"category"},
+        "relations": set(),
+        "example_patterns": set(),
+    }
+
+    ranked = rank_docs("revenue by product category", docs, needs)
+
+    assert ranked[0]["metadata"]["table"] == "products"
+
+
+def test_matching_examples_prefers_matching_patterns_after_ranking():
+    docs = [
+        {
+            "text": "Question: count orders\nPattern: single_table_count",
+            "metadata": {"pattern": "single_table_count", "metrics": ["count"]},
+        },
+        {
+            "text": "Question: revenue by category\nPattern: revenue_calculation",
+            "metadata": {"pattern": "revenue_calculation", "metrics": ["revenue"]},
+        },
+    ]
+
+    matches = matching_examples(docs, {"revenue_calculation"}, "revenue by category")
+
+    assert matches == [docs[1]]
+
+
 def test_sql_validation_rejects_unsafe_sql_and_accepts_cte():
     with pytest.raises(SqlValidationError):
         validate_sql("DELETE FROM orders", {"orders"})
@@ -108,7 +166,14 @@ def test_answer_question_uses_core_pipeline_with_mocks(monkeypatch):
         }
 
     monkeypatch.setattr(pipeline, "retrieve_context", fake_retrieve_context)
-    monkeypatch.setattr(pipeline, "generate_sql", lambda prompt, settings: "SELECT order_id FROM orders")
+    responses = iter(
+        [
+            "SELECT order_id FROM orders",
+            '{"satisfied": true, "reason": "The result answers the question.", "retry_instructions": ""}',
+            "There are 2 orders.",
+        ]
+    )
+    monkeypatch.setattr(pipeline, "call_llm", lambda messages, settings: next(responses))
     monkeypatch.setattr(
         pipeline,
         "run_query",
@@ -120,7 +185,7 @@ def test_answer_question_uses_core_pipeline_with_mocks(monkeypatch):
 
     assert report["status"] == "completed"
     assert report["sections"][0]["sql"] == "SELECT order_id FROM orders"
-    assert "order_id" in report["sections"][0]["answer"]
+    assert report["sections"][0]["answer"] == "There are 2 orders."
 
 
 def test_answer_question_splits_independent_questions(monkeypatch):
@@ -139,7 +204,17 @@ def test_answer_question_splits_independent_questions(monkeypatch):
             "example_docs": [],
         },
     )
-    monkeypatch.setattr(pipeline, "generate_sql", lambda prompt, settings: "SELECT order_id FROM orders")
+    responses = iter(
+        [
+            "SELECT order_id FROM orders",
+            '{"satisfied": true, "reason": "The result answers the question.", "retry_instructions": ""}',
+            "First answer.",
+            "SELECT order_id FROM orders",
+            '{"satisfied": true, "reason": "The result answers the question.", "retry_instructions": ""}',
+            "Second answer.",
+        ]
+    )
+    monkeypatch.setattr(pipeline, "call_llm", lambda messages, settings: next(responses))
     monkeypatch.setattr(
         pipeline,
         "run_query",

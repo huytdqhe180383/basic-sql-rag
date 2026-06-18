@@ -3,7 +3,12 @@
 import shutil
 from pathlib import Path
 
-from beacon.indexing import build_schema_docs, load_semantic_model, profile_table_rows
+from beacon.indexing_tools import (
+    build_example_docs,
+    build_schema_docs,
+    load_semantic_model,
+    profile_table_rows,
+)
 
 
 def test_load_semantic_model_reads_one_file_per_table():
@@ -88,3 +93,60 @@ def test_build_schema_docs_includes_profiles_and_sample_rows():
     assert "top_values=Electronics:10" in docs[0]["text"]
     assert "Sample rows" in docs[0]["text"]
     assert docs[0]["metadata"]["table"] == "products"
+
+
+def test_current_semantic_files_have_profiles_and_sample_rows():
+    model = load_semantic_model()
+
+    assert model
+    for table in model:
+        assert len(table["sample_rows"]) == 3
+        for column in table["columns"]:
+            profile = column["profile"]
+            assert "null_count" in profile
+            assert "distinct_count" in profile
+            assert "sample_values" in profile
+
+
+def test_build_example_docs_includes_lightweight_query_signals():
+    few_shot = [
+        {
+            "question": "What is the total revenue by product category?",
+            "sql": (
+                "SELECT p.category, "
+                "SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue "
+                "FROM order_items oi JOIN products p ON oi.product_id = p.product_id "
+                "GROUP BY p.category"
+            ),
+            "tables": ["order_items", "products"],
+            "pattern": "revenue_calculation",
+            "question_families": ["revenue_calculation", "category_analysis"],
+        }
+    ]
+    semantic_model = [
+        {
+            "source_table": "order_items",
+            "columns": [
+                {"name": "quantity"},
+                {"name": "unit_price"},
+                {"name": "discount_amount"},
+                {"name": "product_id"},
+            ],
+        },
+        {
+            "source_table": "products",
+            "columns": [{"name": "category"}, {"name": "product_id"}],
+        },
+    ]
+
+    docs = build_example_docs(few_shot, semantic_model)
+
+    assert "Important columns: category, discount_amount, product_id, quantity, unit_price" in docs[0]["text"]
+    assert "Metrics: revenue" in docs[0]["text"]
+    assert docs[0]["metadata"]["columns"] == [
+        "category",
+        "discount_amount",
+        "product_id",
+        "quantity",
+        "unit_price",
+    ]
