@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "question": "How many order were refunded in 2017 and which city has the most canceled order?"
+  },
+  {
+    "id": 2,
+    "question": "Tell me the 3 most profitable products (total revenue minus cogs) ever, but exclude items currently flagged as overstock."
+  },
+  {
+    "id": 3,
+    "question": "Did we get more new folks from social media or organic search in the first half of 2020? And what was the total COGS for that period?"
+  },
+  {
+    "id": 4,
+    "question": "I need to know the region that brought in the most revenue via apple pay in 2022. Also, what was the average days of supply for all products at the end of 2022?"
+  },
+  {
+    "id": 5,
+    "question": "List the top 2 cities where guys buy the most stuff (total quantity) and the corresponding total revenue from male customers."
+  },
+  {
+    "id": 6,
+    "question": "Show me how many times we ran out of stock for products in the 'streetwear' category, grouped by month of 2022. Also include the average fill rate for those items."
+  },
+  {
+    "id": 7,
+    "question": "Which acquisition channel brings in the most Apple Pay buyers, and what is the most common age bracket of those specific buyers?"
+  },
+  {
+    "id": 8,
+    "question": "Find the district with the highest refund rate (returned orders / total orders). How much revenue did we lose to those returns?"
+  },
+  {
+    "id": 9,
+    "question": "What is the average sell-through rate of the most heavily discounted product category during the last recorded inventory snapshot?"
+  },
+  {
+    "id": 10,
+    "question": "We are looking at people who signed up in 2018. Which source gives us the most loyal buyers (most orders per person), and what color of clothing do they like to buy most?"
+  }
+]

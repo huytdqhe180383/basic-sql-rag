@@ -1,5 +1,13 @@
 """Minimal Gradio UI for Beacon."""
 
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import gradio as gr
 
 from beacon.pipeline import ask_database
@@ -26,3 +34,7 @@ with gr.Blocks(title="Beacon - NL to SQL") as demo:
 def main() -> None:
     """Launch the UI."""
     demo.launch()
+
+
+if __name__ == "__main__":
+    main()

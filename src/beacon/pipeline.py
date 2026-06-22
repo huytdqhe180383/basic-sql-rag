@@ -6,9 +6,16 @@ import re
 import sys
 from textwrap import dedent
 
-from openai import OpenAI
-
 from beacon.config import load_settings
+from beacon.pipeline_tools import (
+    MAX_SQL_ATTEMPTS,
+    call_llm,
+    compose_final_answer,
+    create_section_messages,
+    public_attempt,
+    request_sql,
+    review_attempt,
+)
 from beacon.retrieval import build_prompt, retrieve_context
 from beacon.sql import SqlValidationError, clean_sql, format_results, run_query, validate_sql
 
@@ -35,22 +42,11 @@ def split_questions(question: str) -> list[str]:
 
 def generate_sql(prompt: str, settings: dict) -> str:
     """Call the configured OpenAI-compatible model to produce SQL."""
-    if not settings.get("openai_api_key") or not settings.get("model"):
-        raise RuntimeError("Missing OpenAI settings.")
-    client = OpenAI(
-        api_key=settings["openai_api_key"],
-        base_url=settings.get("openai_api_base"),
-    )
-    response = client.chat.completions.create(
-        model=settings["model"],
-        messages=[
-            {"role": "system", "content": SQL_SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0,
-        timeout=30,
-    )
-    return response.choices[0].message.content or ""
+    messages = [
+        {"role": "system", "content": SQL_SYSTEM_PROMPT},
+        {"role": "user", "content": prompt},
+    ]
+    return call_llm(messages, settings)
 
 
 def answer_question(question: str) -> dict:
@@ -91,25 +87,114 @@ def answer_section(question: str, settings: dict) -> dict:
         }
 
     prompt = build_prompt(question, context)
-    try:
-        sql = validate_sql(clean_sql(generate_sql(prompt, settings)), needs["tables"])
-        result = run_query(sql, settings)
-    except (RuntimeError, SqlValidationError, Exception) as exc:
-        return {
-            "title": question,
-            "status": "failed",
-            "answer": "SQL generation or execution failed.",
-            "sql": locals().get("sql"),
-            "error": str(exc),
-        }
+    messages = create_section_messages(question, prompt)
+    attempts: list[dict] = []
+    last_attempt: dict | None = None
+    last_result: dict | None = None
+
+    for attempt_number in range(1, MAX_SQL_ATTEMPTS + 1):
+        attempt, result = run_sql_attempt(question, settings, needs, messages, attempt_number)
+        attempts.append(public_attempt(attempt))
+        last_attempt = attempt
+        last_result = result
+        if attempt["satisfied"]:
+            answer, answer_error = safe_compose_final_answer(
+                messages,
+                settings,
+                question,
+                attempt,
+                result,
+                attempts,
+            )
+            return {
+                "title": question,
+                "status": "completed",
+                "answer": answer,
+                "sql": attempt.get("sql"),
+                "error": answer_error,
+                "attempt_count": len(attempts),
+                "attempts": attempts,
+            }
+
+    answer, answer_error = safe_compose_final_answer(
+        messages,
+        settings,
+        question,
+        last_attempt or {},
+        last_result,
+        attempts,
+    )
+    error = final_attempt_error(last_attempt) or answer_error
 
     return {
         "title": question,
-        "status": "completed",
-        "answer": format_results(result["columns"], result["rows"], result.get("total")),
-        "sql": sql,
-        "error": None,
+        "status": "failed",
+        "answer": answer,
+        "sql": (last_attempt or {}).get("sql"),
+        "error": error,
+        "attempt_count": len(attempts),
+        "attempts": attempts,
     }
+
+
+def run_sql_attempt(
+    question: str,
+    settings: dict,
+    needs: dict,
+    messages: list[dict],
+    attempt_number: int,
+) -> tuple[dict, dict | None]:
+    """Generate, validate, execute, and review one SQL attempt."""
+    raw_sql = request_sql(messages, settings, attempt_number, call_llm)
+    attempt = {
+        "sql": clean_sql(raw_sql),
+        "status": "generated",
+        "error": None,
+        "review_reason": None,
+        "satisfied": False,
+    }
+    result = None
+
+    try:
+        attempt["sql"] = validate_sql(attempt["sql"], needs["tables"])
+        result = run_query(attempt["sql"], settings)
+        attempt["status"] = "completed"
+    except SqlValidationError as exc:
+        attempt["status"] = "validation_error"
+        attempt["error"] = str(exc)
+    except Exception as exc:
+        attempt["status"] = "execution_error"
+        attempt["error"] = str(exc)
+
+    review = review_attempt(messages, settings, question, attempt, result, call_llm)
+    attempt["review_reason"] = review["reason"]
+    attempt["satisfied"] = review["satisfied"]
+    return attempt, result
+
+
+def safe_compose_final_answer(
+    messages: list[dict],
+    settings: dict,
+    question: str,
+    attempt: dict,
+    result: dict | None,
+    attempts: list[dict],
+) -> tuple[str, str | None]:
+    """Compose a final answer, falling back if the LLM answer call fails."""
+    try:
+        answer = compose_final_answer(messages, settings, question, attempt, result, attempts, call_llm)
+        return answer, None
+    except Exception as exc:
+        if result and attempt.get("status") == "completed":
+            return format_results(result["columns"], result["rows"], result.get("total")), str(exc)
+        return "SQL generation or execution failed.", str(exc)
+
+
+def final_attempt_error(attempt: dict | None) -> str | None:
+    """Return the clearest final failure reason for a section."""
+    if not attempt:
+        return None
+    return attempt.get("review_reason") or attempt.get("error")
 
 
 def ask_database(question: str) -> tuple[str, str | None]:

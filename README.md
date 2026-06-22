@@ -65,9 +65,11 @@ python -m beacon.pipeline "How many orders were placed last month?"
 The implementation lives under `src/beacon/` as a small set of modules:
 
 - `src/beacon/pipeline.py` for question splitting, prompting, SQL generation, and answers
-- `src/beacon/retrieval.py` for question understanding, schema retrieval, and coverage checks
+- `src/beacon/retrieval.py` for the retrieval workflow and prompt assembly
+- `src/beacon/retrieval_tools.py` for question rules, coverage checks, and document ranking
 - `src/beacon/sql.py` for SQL validation, execution, and result formatting
-- `src/beacon/indexing.py` for semantic profiles and vector index building
+- `src/beacon/indexing.py` for the index-building workflow
+- `src/beacon/indexing_tools.py` for semantic profiles and retrieval document construction
 - `src/beacon/config.py` for paths, environment, and database settings
 - `src/beacon/ui.py` for the Gradio interface
 - `src/beacon/load_db.py` for loading processed CSVs into PostgreSQL
@@ -75,6 +77,8 @@ The implementation lives under `src/beacon/` as a small set of modules:
 There are no duplicate root-level wrapper scripts; run the package modules with `PYTHONPATH=src` as shown above.
 
 `data/semantic_model/` is the main semantic layer. It has one JSON file per table, each with descriptions, relations, three sample rows, and compact column profiles such as min/max/mean, date ranges, null counts, distinct counts, and common categorical values.
+
+`data/few_shot_queries.json` stays small and readable. During indexing, Beacon adds lightweight signals such as important columns, metrics, filters, and time grain to help retrieve better examples.
 
 ## Database Schema
 
@@ -95,7 +99,8 @@ Key relationships connect customers to orders, orders to line items, line items 
 1. You enter a question in the UI or CLI.
 2. Deterministic rules identify the required tables, columns, and joins.
 3. Schema retrieval expands until the required context is covered.
-4. Matching example queries are added as optional prompt enrichment.
+4. Matching example queries are added as optional prompt enrichment, using simple pattern and metadata signals.
 5. The covered prompt is sent to an OpenAI-compatible LLM.
 6. The generated `SELECT` query is validated and runs against PostgreSQL.
-7. Results are displayed with the SQL that was executed.
+7. The same in-request LLM conversation reviews the result or error and can retry up to 2 times.
+8. Beacon returns a final natural-language answer with the SQL that was executed.
