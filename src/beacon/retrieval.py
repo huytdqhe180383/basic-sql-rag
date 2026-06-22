@@ -92,9 +92,15 @@ def retrieve_matching_examples(example_index, question: str, needs: dict, covera
 
 def retrieve_context(question: str) -> dict:
     """Retrieve schema and optional example context for one question."""
-    needs = extract_question_needs(question)
+    import concurrent.futures
     semantic_model = load_semantic_model()
-    matched_evidence = ground_question_metadata(question, semantic_model)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        future_needs = executor.submit(extract_question_needs, question)
+        future_evidence = executor.submit(ground_question_metadata, question, semantic_model)
+        needs = future_needs.result()
+        matched_evidence = future_evidence.result()
+
     needs = apply_grounding_to_needs(needs, matched_evidence)
     forced_docs = schema_docs_for_tables(build_schema_docs(semantic_model), needs["tables"])
     schema_index, example_index = load_indices()

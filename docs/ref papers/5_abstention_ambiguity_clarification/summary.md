@@ -12,10 +12,7 @@ This category covers when Beacon should not force an SQL answer: missing schema 
   - Focus: evaluating feasible and infeasible questions with reliability penalties.
   - Beacon use: supports tests where the right behavior is to refuse or explain missing data.
 
-- [Know What I Don't Know](know_what_i_do_not_know_unknown_questions.md)
-  - Focus: categories of ambiguous and unanswerable Text-to-SQL questions.
-  - Beacon use: helps design negative tests and coverage failure messages.
+- [SOMA-SQL: Resolving Multi-Source Ambiguity](../1_semantic_metadata_value_grounding/soma_sql_ambiguity_probing.md)
+  - Focus: resolving multi-source ambiguity in queries and schemas via synthetic query logs and execution probing.
+  - Beacon use: supports techniques to ground schemas with synthetic historical logs and verify intent using safe database checks.
 
-- [Sphinteract: Resolving Ambiguities Through User Interaction](sphinteract_user_interaction_ambiguities.md)
-  - Focus: minimal user interaction for ambiguous NL2SQL questions.
-  - Beacon use: future pattern for asking one targeted clarification question.
