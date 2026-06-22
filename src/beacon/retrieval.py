@@ -8,6 +8,12 @@ from llama_index.core import Settings, StorageContext, load_index_from_storage
 from llama_index.embeddings.openai import OpenAIEmbedding
 
 from beacon.config import FEW_SHOT_INDEX_DIR, SCHEMA_INDEX_DIR
+from beacon.indexing_tools import build_schema_docs, load_semantic_model
+from beacon.metadata_grounding import (
+    apply_grounding_to_needs,
+    format_matched_evidence,
+    ground_question_metadata,
+)
 from beacon.retrieval_tools import (
     assess_coverage,
     extract_question_needs,
@@ -47,13 +53,20 @@ def retrieve_nodes(index, question: str, k: int) -> list[dict]:
     ]
 
 
-def retrieve_schema_until_covered(schema_index, question: str, needs: dict) -> tuple[list[dict], dict]:
+def retrieve_schema_until_covered(
+    schema_index,
+    question: str,
+    needs: dict,
+    forced_docs: list[dict] | None = None,
+) -> tuple[list[dict], dict]:
     """Expand schema retrieval until inferred needs are covered or the limit is reached."""
+    forced_docs = forced_docs or []
     schema_docs: list[dict] = []
     coverage = {"is_sufficient": False, "missing": {}}
 
     for k in range(SCHEMA_K_START, SCHEMA_K_MAX + 1):
         retrieved = retrieve_nodes(schema_index, question, k)
+        retrieved = merge_schema_docs(retrieved, forced_docs)
         schema_docs = rank_docs(question, retrieved, needs)
         coverage = assess_coverage(needs, schema_docs)
         if coverage["is_sufficient"]:
@@ -80,9 +93,13 @@ def retrieve_matching_examples(example_index, question: str, needs: dict, covera
 def retrieve_context(question: str) -> dict:
     """Retrieve schema and optional example context for one question."""
     needs = extract_question_needs(question)
+    semantic_model = load_semantic_model()
+    matched_evidence = ground_question_metadata(question, semantic_model)
+    needs = apply_grounding_to_needs(needs, matched_evidence)
+    forced_docs = schema_docs_for_tables(build_schema_docs(semantic_model), needs["tables"])
     schema_index, example_index = load_indices()
 
-    schema_docs, coverage = retrieve_schema_until_covered(schema_index, question, needs)
+    schema_docs, coverage = retrieve_schema_until_covered(schema_index, question, needs, forced_docs)
     example_docs = retrieve_matching_examples(example_index, question, needs, coverage)
     coverage = assess_coverage(needs, schema_docs, example_docs)
 
@@ -91,12 +108,40 @@ def retrieve_context(question: str) -> dict:
         "schema_docs": schema_docs,
         "example_docs": example_docs,
         "schema_coverage": coverage,
+        "matched_evidence": matched_evidence,
     }
+
+
+def schema_docs_for_tables(schema_docs: list[dict], tables: set[str]) -> list[dict]:
+    """Return schema docs for required tables from a full schema-doc list."""
+    return [
+        doc
+        for doc in schema_docs
+        if doc.get("metadata", {}).get("table") in tables
+    ]
+
+
+def merge_schema_docs(retrieved_docs: list[dict], forced_docs: list[dict]) -> list[dict]:
+    """Append forced table docs while preserving first occurrence order."""
+    merged: list[dict] = []
+    seen_tables: set[str] = set()
+    for doc in retrieved_docs + forced_docs:
+        table = doc.get("metadata", {}).get("table")
+        if table and table in seen_tables:
+            continue
+        if table:
+            seen_tables.add(table)
+        merged.append(doc)
+    return merged
 
 
 def build_prompt(question: str, context: dict) -> str:
     """Build the final SQL prompt from retrieved schema and examples."""
-    sections = ["RELEVANT SCHEMA:"]
+    sections = []
+    evidence = format_matched_evidence(context.get("matched_evidence", []))
+    if evidence:
+        sections.append(evidence)
+    sections.append("RELEVANT SCHEMA:")
     sections.extend(doc["text"] for doc in context.get("schema_docs", []))
     if context.get("example_docs"):
         sections.append("EXAMPLE QUERIES:")

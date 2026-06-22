@@ -1,7 +1,5 @@
 # Beacon Pipeline Deep Dive
 
-This document explains the current Beacon code path in enough detail to defend the method and codebase in review.
-
 Project root:
 
 `E:\AI Thuc Chien\VSF\basic-mvp`

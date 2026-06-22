@@ -40,17 +40,39 @@ TABLE_RULES = [
         {
             "customer",
             "customers",
+            "new folks",
+            "new people",
             "signup",
             "signed up",
             "acquisition",
             "gender",
             "age group",
+            "age bracket",
         },
         {"customers"},
     ),
-    ({"order", "orders", "placed", "device", "mobile", "payment", "order status"}, {"orders"}),
-    ({"product", "products", "category", "segment", "size", "color"}, {"products"}),
-    ({"city", "region", "district", "location", "geography"}, {"geography"}),
+    (
+        {
+            "order",
+            "orders",
+            "placed",
+            "buyer",
+            "buyers",
+            "buy",
+            "bought",
+            "purchase",
+            "purchased",
+            "device",
+            "mobile",
+            "payment",
+            "order status",
+            "discount",
+            "discounted",
+        },
+        {"orders"},
+    ),
+    ({"product", "products", "category", "segment", "size", "color", "clothing"}, {"products"}),
+    ({"city", "cities", "region", "district", "location", "geography"}, {"geography"}),
     (
         {
             "inventory",
@@ -59,7 +81,12 @@ TABLE_RULES = [
             "reorder",
             "reordering",
             "stockout",
+            "out of stock",
+            "ran out of stock",
+            "overstock",
+            "overstocked",
             "sell through",
+            "sell-through",
             "days of supply",
         },
         {"inventory"},
@@ -67,10 +94,10 @@ TABLE_RULES = [
 ]
 
 COLUMN_RULES = [
-    ({"signup", "signed up"}, {"signup_date"}),
-    ({"acquisition"}, {"acquisition_channel"}),
+    ({"signup", "signed up", "new folks", "new people"}, {"signup_date"}),
+    ({"acquisition", "source"}, {"acquisition_channel"}),
     ({"gender"}, {"gender"}),
-    ({"age group"}, {"age_group"}),
+    ({"age group", "age bracket"}, {"age_group"}),
     ({"device", "mobile"}, {"device_type"}),
     ({"payment"}, {"payment_method"}),
     ({"order status"}, {"order_status"}),
@@ -79,15 +106,18 @@ COLUMN_RULES = [
     ({"size"}, {"size"}),
     ({"color"}, {"color"}),
     ({"product name"}, {"product_name"}),
-    ({"city"}, {"city"}),
+    ({"city", "cities"}, {"city"}),
     ({"region"}, {"region"}),
     ({"district"}, {"district"}),
     ({"stock"}, {"stock_on_hand"}),
     ({"fill rate"}, {"fill_rate"}),
     ({"reorder", "reordering"}, {"reorder_flag"}),
-    ({"stockout"}, {"stockout_flag"}),
-    ({"sell through"}, {"sell_through_rate"}),
+    ({"stockout", "out of stock", "ran out of stock"}, {"stockout_flag"}),
+    ({"overstock", "overstocked"}, {"overstock_flag"}),
+    ({"sell through", "sell-through"}, {"sell_through_rate"}),
     ({"days of supply"}, {"days_of_supply"}),
+    ({"quantity", "stuff"}, {"quantity"}),
+    ({"discount", "discounted"}, {"discount_amount"}),
 ]
 
 PATTERN_RULES = [
@@ -97,8 +127,10 @@ PATTERN_RULES = [
 ]
 
 DATE_WORDS = {"today", "yesterday", "last week", "last month", "last year", "this year"}
+PERIOD_WORDS = {"first half", "second half", "period", "quarter", "year", "month"}
 DAILY_WORDS = {"daily", "by day", "per day", "each day"}
-REVENUE_WORDS = {"revenue", "sales", "total sales"}
+REVENUE_WORDS = {"revenue", "sales", "total sales", "profit", "profitable", "profitability"}
+PURCHASE_WORDS = {"buy", "buyer", "buyers", "bought", "purchase", "purchased", "stuff"}
 BUSINESS_DIMENSION_WORDS = {
     "customer",
     "customers",
@@ -131,6 +163,8 @@ def extract_question_needs(question: str) -> dict:
     apply_revenue_rules(q, tables, columns, patterns)
     apply_geography_rules(q, tables, patterns)
     apply_inventory_rules(q, tables, columns, patterns)
+    apply_discount_rules(q, tables, columns, patterns)
+    apply_purchase_rules(q, tables, columns, patterns)
 
     return {
         "tables": tables,
@@ -180,7 +214,19 @@ def apply_revenue_rules(
     if has_any(text, REVENUE_WORDS):
         tables.update({"orders", "order_items"})
         columns.update({"quantity", "unit_price", "discount_amount"})
+        if has_date_reference(text):
+            columns.add("order_date")
+            patterns.add("single_table_date_filter")
         patterns.add("revenue_calculation")
+
+    if has_any(text, {"cogs", "cost of goods"}):
+        if has_any(text, PERIOD_WORDS) or has_date_reference(text):
+            tables.add("sales")
+            columns.update({"Date", "COGS"})
+            patterns.add("daily_sales_aggregate")
+        else:
+            tables.add("products")
+            columns.add("cogs")
 
 
 def apply_geography_rules(text: str, tables: set[str], patterns: set[str]) -> None:
@@ -196,13 +242,40 @@ def apply_inventory_rules(text: str, tables: set[str], columns: set[str], patter
     if "month" in text and "inventory" in tables:
         columns.add("month")
     if "inventory" in tables:
+        if re.search(r"\b(?:19|20)\d{2}\b", text):
+            columns.add("year")
+        if has_any(text, {"snapshot", "current", "currently", "last recorded", "end of"}):
+            columns.add("snapshot_date")
         patterns.add("inventory_health")
+
+
+def apply_discount_rules(text: str, tables: set[str], columns: set[str], patterns: set[str]) -> None:
+    """Route discount wording to line-item discount data."""
+    if has_any(text, {"discount", "discounted"}):
+        tables.add("order_items")
+        columns.add("discount_amount")
+        patterns.add("discount_analysis")
+
+
+def apply_purchase_rules(text: str, tables: set[str], columns: set[str], patterns: set[str]) -> None:
+    """Route buyer and purchase wording through orders and line items."""
+    if not has_any(text, PURCHASE_WORDS):
+        return
+    if {"customers", "products", "geography"} & tables or has_any(text, REVENUE_WORDS):
+        tables.update({"orders", "order_items"})
+        columns.add("quantity")
+        patterns.add("revenue_calculation" if has_any(text, REVENUE_WORDS) else "orders_items_join")
 
 
 def add_when(text: str, phrases: set[str], output: set[str], value: str) -> None:
     """Add one value when any trigger phrase matches."""
     if has_any(text, phrases):
         output.add(value)
+
+
+def has_date_reference(text: str) -> bool:
+    """Return whether text contains a simple date reference."""
+    return bool(re.search(r"\b(?:19|20)\d{2}\b", text)) or has_any(text, DATE_WORDS)
 
 
 def required_relations(tables: set[str]) -> set[str]:
