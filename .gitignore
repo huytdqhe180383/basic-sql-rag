@@ -9,3 +9,8 @@ data/indices/**/*.json
 data/indices/**/*.parquet
 data/processed/
 tests/test results/
+benchmarks/.venv_spider2_snow/
+benchmarks/vendor/
+benchmarks/spider2_snow/results/
+benchmarks/spider2_snow/subsets/
+benchmarks/spider2_snow/.test_tmp/

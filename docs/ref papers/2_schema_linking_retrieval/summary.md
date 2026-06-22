@@ -19,3 +19,8 @@ This category covers how Beacon finds the relevant tables, columns, examples, an
 - [Improving Retrieval-augmented Text-to-SQL with AST-based Ranking and Schema Pruning](retrieval_ast_ranking_schema_pruning.md)
   - Focus: AST-aware example ranking plus schema/value pruning.
   - Beacon use: supports richer example metadata before any heavy AST machinery.
+
+- [LitE-SQL: Lightweight and Efficient Text-to-SQL](lite_sql_schema_linking_correction.md)
+  - Focus: vector-based schema linking and model-level execution-guided self-correction.
+  - Beacon use: supports simple vector database index matching for schemas combined with execution feedback loops.
+
