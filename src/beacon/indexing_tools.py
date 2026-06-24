@@ -103,13 +103,15 @@ def profile_table_rows(rows: list[dict], columns: list[dict]) -> dict:
     """Return three sample rows and compact per-column value profiles."""
     state = {column["name"]: new_profile_state(column) for column in columns}
     sample_rows = [
-        {key: (value if value != "" else None) for key, value in row.items()}
+        {
+            column["name"]: clean_cell(row_value(row, column["name"]))
+            for column in columns
+        }
         for row in rows[:3]
     ]
     for row in rows:
-        normalized = {key: (value if value != "" else None) for key, value in row.items()}
         for column in columns:
-            update_profile_state(state[column["name"]], normalized.get(column["name"]))
+            update_profile_state(state[column["name"]], clean_cell(row_value(row, column["name"])))
 
     return {
         "sample_rows": sample_rows,
@@ -169,8 +171,8 @@ def profile_csv_file(path: Path, columns: list[dict]) -> dict:
     with path.open(encoding="utf-8", newline="") as handle:
         for raw_row in csv.DictReader(handle):
             row = {
-                key: (value if value != "" else None)
-                for key, value in raw_row.items()
+                column["name"]: clean_cell(row_value(raw_row, column["name"]))
+                for column in columns
             }
             if len(sample_rows) < 3:
                 sample_rows.append(row)
@@ -184,6 +186,22 @@ def profile_csv_file(path: Path, columns: list[dict]) -> dict:
             for column in columns
         },
     }
+
+
+def row_value(row: dict, column_name: str):
+    """Return a cell by semantic column name, tolerating CSV header case drift."""
+    if column_name in row:
+        return row[column_name]
+    lowered = column_name.lower()
+    for key, value in row.items():
+        if key.lower() == lowered:
+            return value
+    return None
+
+
+def clean_cell(value):
+    """Normalize empty CSV cells to None."""
+    return value if value != "" else None
 
 
 def new_profile_state(column: dict) -> dict:

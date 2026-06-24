@@ -19,3 +19,4 @@
 - Keep documentation practical and current.
 - Preserve `references.md` and reference papers.
 - Document important design decisions in plain language.
+- Keep `setup.md` current when dependencies, environment variables, or local startup commands change.

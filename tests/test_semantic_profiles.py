@@ -7,6 +7,7 @@ from beacon.indexing_tools import (
     build_example_docs,
     build_schema_docs,
     load_semantic_model,
+    profile_csv_file,
     profile_table_rows,
 )
 
@@ -60,6 +61,30 @@ def test_profile_table_rows_summarizes_common_column_types():
     assert profile["columns"]["created_at"]["min"] == "2025-01-01"
     assert profile["columns"]["created_at"]["max"] == "2025-01-03"
     assert profile["columns"]["is_active"]["value_counts"] == {"false": 1, "true": 2}
+
+
+def test_profile_csv_file_matches_headers_case_insensitively(tmp_path):
+    csv_path = tmp_path / "sales.csv"
+    csv_path.write_text(
+        "Date,Revenue,COGS\n2020-01-01,10.50,7.25\n2020-01-02,20.00,12.00\n",
+        encoding="utf-8",
+    )
+    columns = [
+        {"name": "date", "type": "DATE", "description": "Calendar date"},
+        {"name": "revenue", "type": "NUMERIC(14,2)", "description": "Revenue"},
+        {"name": "cogs", "type": "NUMERIC(14,2)", "description": "Cost"},
+    ]
+
+    profile = profile_csv_file(csv_path, columns)
+
+    assert profile["sample_rows"][0] == {
+        "date": "2020-01-01",
+        "revenue": "10.50",
+        "cogs": "7.25",
+    }
+    assert profile["columns"]["date"]["min"] == "2020-01-01"
+    assert profile["columns"]["revenue"]["max"] == 20.0
+    assert profile["columns"]["cogs"]["null_count"] == 0
 
 
 def test_build_schema_docs_includes_profiles_and_sample_rows():

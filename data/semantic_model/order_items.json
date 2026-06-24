@@ -99,7 +99,7 @@
     {
       "name": "discount_amount",
       "type": "NUMERIC(14,2)",
-      "description": "Discount applied to this line item",
+      "description": "Discount applied to this line item. For heavily discounted or discount-rate analysis, use discount_amount / NULLIF(quantity * unit_price, 0).",
       "profile": {
         "null_count": 0,
         "distinct_count": 204449,

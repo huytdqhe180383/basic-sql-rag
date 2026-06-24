@@ -27,6 +27,7 @@ def test_question_understanding_selects_relevant_schema_needs():
 
     daily = extract_question_needs("What was daily Revenue and COGS last week?")
     assert daily["tables"] == {"sales"}
+    assert {"date", "revenue", "cogs"}.issubset(daily["columns"])
 
     inventory = extract_question_needs("Show fill rate by month")
     assert inventory["tables"] == {"inventory"}
@@ -144,6 +145,12 @@ def test_sql_validation_rejects_unsafe_sql_and_accepts_cte():
         {"orders"},
     )
     assert sql.startswith("WITH recent")
+
+    generated = validate_sql(
+        "SELECT month FROM generate_series(1, 12) AS months(month)",
+        set(),
+    )
+    assert "generate_series" in generated
 
 
 def test_answer_question_uses_core_pipeline_with_mocks(monkeypatch):

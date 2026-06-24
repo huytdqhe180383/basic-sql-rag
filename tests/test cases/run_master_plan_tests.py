@@ -40,7 +40,9 @@ def run_tests():
                     "status": s["status"],
                     "sql": s["sql"],
                     "answer": s["answer"],
-                    "error": s["error"]
+                    "error": s["error"],
+                    "attempt_count": s.get("attempt_count"),
+                    "attempts": s.get("attempts", [])
                 } for s in en_report["sections"]]
             }
         except Exception as e:
@@ -56,7 +58,9 @@ def run_tests():
                     "status": s["status"],
                     "sql": s["sql"],
                     "answer": s["answer"],
-                    "error": s["error"]
+                    "error": s["error"],
+                    "attempt_count": s.get("attempt_count"),
+                    "attempts": s.get("attempts", [])
                 } for s in vn_report["sections"]]
             }
         except Exception as e:

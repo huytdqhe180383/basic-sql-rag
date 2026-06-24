@@ -150,7 +150,12 @@ def has_any(text: str, phrases: set[str]) -> bool:
 
 
 def extract_question_needs(question: str) -> dict:
-    """Infer needed tables, columns, joins, and examples using simple rules."""
+    """Compatibility fallback for the original demo schema.
+
+    New schema-linking code should use `question_signals.extract_question_signals`
+    and `schema_linking.link_schema`. Do not add Spider-Snow database-specific
+    table rules here.
+    """
     q = " ".join(question.lower().split())
     tables: set[str] = set()
     columns: set[str] = set()
@@ -205,9 +210,9 @@ def apply_revenue_rules(
     if wants_daily_sales:
         tables.clear()
         tables.add("sales")
-        columns.add("Date")
-        add_when(text, {"revenue", "sales"}, columns, "Revenue")
-        add_when(text, {"cogs"}, columns, "COGS")
+        columns.add("date")
+        add_when(text, {"revenue", "sales"}, columns, "revenue")
+        add_when(text, {"cogs"}, columns, "cogs")
         patterns.add("daily_sales_aggregate")
         return
 
@@ -222,7 +227,7 @@ def apply_revenue_rules(
     if has_any(text, {"cogs", "cost of goods"}):
         if has_any(text, PERIOD_WORDS) or has_date_reference(text):
             tables.add("sales")
-            columns.update({"Date", "COGS"})
+            columns.update({"date", "cogs"})
             patterns.add("daily_sales_aggregate")
         else:
             tables.add("products")

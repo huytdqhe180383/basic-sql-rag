@@ -17,6 +17,11 @@ FEW_SHOT_QUERIES_PATH = DATA_DIR / "few_shot_queries.json"
 INDEX_DIR = DATA_DIR / "indices"
 SCHEMA_INDEX_DIR = INDEX_DIR / "schema"
 FEW_SHOT_INDEX_DIR = INDEX_DIR / "few_shot"
+LOCAL_VECTOR_INDEX_DIR = INDEX_DIR / "local_vectors"
+SCHEMA_VECTOR_RECORDS_PATH = LOCAL_VECTOR_INDEX_DIR / "schema_records.json"
+SCHEMA_VECTOR_MATRIX_PATH = LOCAL_VECTOR_INDEX_DIR / "schema_vectors.npy"
+SCHEMA_VECTOR_MANIFEST_PATH = LOCAL_VECTOR_INDEX_DIR / "schema_manifest.json"
+FEEDBACK_EXAMPLES_PATH = DATA_DIR / "example_candidates.json"
 
 
 def get_db_kwargs(env: dict | None = None) -> dict[str, str]:

@@ -5,7 +5,7 @@
   "description": "Pre-aggregated daily Revenue and COGS totals. Use this for quick daily total revenue/COGS queries that do not need customer, product, or order detail.",
   "columns": [
     {
-      "name": "Date",
+      "name": "date",
       "type": "DATE",
       "description": "Calendar date",
       "profile": {
@@ -23,7 +23,7 @@
       }
     },
     {
-      "name": "Revenue",
+      "name": "revenue",
       "type": "NUMERIC(14,2)",
       "description": "Total revenue for the day",
       "profile": {
@@ -42,7 +42,7 @@
       }
     },
     {
-      "name": "COGS",
+      "name": "cogs",
       "type": "NUMERIC(14,2)",
       "description": "Total cost of goods sold for the day",
       "profile": {
@@ -69,19 +69,19 @@
   ],
   "sample_rows": [
     {
-      "Date": "2012-07-04",
-      "Revenue": "5123547.94",
-      "COGS": "3982991.19"
+      "date": "2012-07-04",
+      "revenue": "5123547.94",
+      "cogs": "3982991.19"
     },
     {
-      "Date": "2012-07-05",
-      "Revenue": "2751773.45",
-      "COGS": "2150580.23"
+      "date": "2012-07-05",
+      "revenue": "2751773.45",
+      "cogs": "2150580.23"
     },
     {
-      "Date": "2012-07-06",
-      "Revenue": "3054029.42",
-      "COGS": "2517632.84"
+      "date": "2012-07-06",
+      "revenue": "3054029.42",
+      "cogs": "2517632.84"
     }
   ]
 }

@@ -9,13 +9,21 @@ from dotenv import load_dotenv
 from llama_index.core import Document, Settings, VectorStoreIndex
 from llama_index.embeddings.openai import OpenAIEmbedding
 
-from beacon.config import FEW_SHOT_INDEX_DIR, FEW_SHOT_QUERIES_PATH, SCHEMA_INDEX_DIR
+from beacon.config import (
+    FEW_SHOT_INDEX_DIR,
+    FEW_SHOT_QUERIES_PATH,
+    LOCAL_VECTOR_INDEX_DIR,
+    SCHEMA_INDEX_DIR,
+)
+from beacon.embeddings import HashEmbeddingAdapter, default_embedding_adapter
 from beacon.indexing_tools import (
     build_example_docs,
     build_schema_docs,
     enrich_semantic_model_files,
     load_json,
 )
+from beacon.schema_index import build_schema_records
+from beacon.vector_store import save_vector_index
 
 
 def persist_index(docs: list[dict], persist_dir: Path) -> None:
@@ -39,17 +47,45 @@ def configure_embeddings() -> None:
     )
 
 
-def build_indices() -> None:
+def build_indices() -> dict:
     """Build schema and example indices from semantic JSON artifacts."""
-    configure_embeddings()
     semantic_model = enrich_semantic_model_files()
-    few_shot = load_json(FEW_SHOT_QUERIES_PATH)
 
-    persist_index(build_schema_docs(semantic_model), SCHEMA_INDEX_DIR)
-    persist_index(build_example_docs(few_shot, semantic_model), FEW_SHOT_INDEX_DIR)
+    persist_local_schema_vectors(semantic_model)
+    built_legacy = False
+    if os.getenv("BEACON_BUILD_LEGACY_LLAMA_INDEX") == "1":
+        few_shot = load_json(FEW_SHOT_QUERIES_PATH)
+        configure_embeddings()
+        persist_index(build_schema_docs(semantic_model), SCHEMA_INDEX_DIR)
+        persist_index(build_example_docs(few_shot, semantic_model), FEW_SHOT_INDEX_DIR)
+        built_legacy = True
+    return {"local_vectors": True, "legacy_llama_index": built_legacy}
+
+
+def persist_local_schema_vectors(semantic_model: list[dict]) -> None:
+    """Build Beacon's lightweight local vector schema index."""
+    schema_records = build_schema_records(semantic_model)
+    try:
+        embedder = default_embedding_adapter()
+    except Exception:
+        embedder = HashEmbeddingAdapter()
+    schema_vectors = embedder.embed_texts([record["text"] for record in schema_records])
+    save_vector_index(
+        LOCAL_VECTOR_INDEX_DIR,
+        schema_records,
+        schema_vectors,
+        {"model": embedder.model_name, "kind": "schema"},
+    )
 
 
 def main() -> None:
     """CLI entry point for rebuilding Beacon retrieval indices."""
-    build_indices()
-    print("Built schema and few-shot indices.")
+    result = build_indices()
+    if result["legacy_llama_index"]:
+        print("Built local schema vectors and legacy schema/few-shot indices.")
+    else:
+        print("Built local schema vectors.")
+
+
+if __name__ == "__main__":
+    main()

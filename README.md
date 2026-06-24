@@ -2,6 +2,8 @@
 
 Ask questions about your e-commerce data in plain English. Beacon retrieves only the relevant schema context, asks an LLM to generate PostgreSQL, executes the query, and returns formatted results.
 
+For a fresh local machine setup, read `setup.md` first. It covers the non-repo prerequisites such as PostgreSQL, the `.env` file, and the extra dev dependency used for testing.
+
 ## Quick Start
 
 ### 1. Install dependencies
@@ -33,7 +35,8 @@ $env:PYTHONPATH="src"
 python -m beacon.indexing
 ```
 
-This creates separate schema and few-shot indices under `data/indices/`.
+This creates Beacon's local schema vector files under `data/indices/local_vectors/`.
+To also rebuild the legacy LlamaIndex schema and few-shot indices, set `BEACON_BUILD_LEGACY_LLAMA_INDEX=1`.
 
 ### 4. Load the data
 
@@ -64,12 +67,22 @@ python -m beacon.pipeline "How many orders were placed last month?"
 
 The implementation lives under `src/beacon/` as a small set of modules:
 
-- `src/beacon/pipeline.py` for question splitting, prompting, SQL generation, and answers
-- `src/beacon/retrieval.py` for the retrieval workflow and prompt assembly
-- `src/beacon/retrieval_tools.py` for question rules, coverage checks, and document ranking
+- `src/beacon/pipeline.py` for public question answering entry points
+- `src/beacon/schema_linking.py` for the hybrid schema linking workflow
+- `src/beacon/question_signals.py` for generic question signals
+- `src/beacon/metadata_grounding.py` for value/entity grounding and confidence scoring
+- `src/beacon/schema_graph.py` for join-path expansion
+- `src/beacon/vector_store.py` and `src/beacon/embeddings.py` for local vector retrieval
+- `src/beacon/example_retrieval.py` for structurally ranked few-shot examples
+- `src/beacon/feedback_examples.py` for semi-automatic example candidates
+- `src/beacon/prompting.py` for SQL prompt assembly
+- `src/beacon/retry.py` for SQL, value, and retrieval retry decisions
+- `src/beacon/retrieval.py` for compatibility retrieval entry points used by the pipeline
+- `src/beacon/retrieval_tools.py` for original demo-schema fallback rules and legacy ranking helpers
 - `src/beacon/sql.py` for SQL validation, execution, and result formatting
 - `src/beacon/indexing.py` for the index-building workflow
 - `src/beacon/indexing_tools.py` for semantic profiles and retrieval document construction
+- `src/beacon/profiler.py` for offline semantic profile refresh
 - `src/beacon/config.py` for paths, environment, and database settings
 - `src/beacon/ui.py` for the Gradio interface
 - `src/beacon/load_db.py` for loading processed CSVs into PostgreSQL
@@ -97,10 +110,15 @@ Key relationships connect customers to orders, orders to line items, line items 
 ## How It Works
 
 1. You enter a question in the UI or CLI.
-2. Deterministic rules identify the required tables, columns, and joins.
-3. Schema retrieval expands until the required context is covered.
-4. Matching example queries are added as optional prompt enrichment, using simple pattern and metadata signals.
-5. The covered prompt is sent to an OpenAI-compatible LLM.
-6. The generated `SELECT` query is validated and runs against PostgreSQL.
-7. The same in-request LLM conversation reviews the result or error and can retry up to 2 times.
-8. Beacon returns a final natural-language answer with the SQL that was executed.
+2. Beacon extracts generic question signals such as metrics, dates, grouping, ranking, and likely entity phrases.
+3. Beacon grounds user terms against semantic profiles, aliases, and sample values.
+4. Beacon searches the local schema vector index and combines those hits with grounded evidence and weak lexical fallback signals.
+5. Beacon expands selected tables through the schema graph so join keys and bridge tables are available.
+6. Beacon ranks few-shot examples by structural overlap with selected tables, metrics, filters, and time grain.
+7. Beacon builds a SQL-only prompt from matched evidence, join paths, schema docs, examples, and the original question.
+8. The LLM returns one read-only PostgreSQL query.
+9. Beacon validates and executes the query in a read-only transaction.
+10. Beacon reviews the result or error and retries with SQL, value, or retrieval repair guidance when useful.
+11. Accepted queries can optionally be saved as future example candidates.
+
+See `docs/pipeline.md` for the full Mermaid diagram and module-level flow. See `docs/evaluation.md` for the latest focused-test and 10-question evaluation notes.

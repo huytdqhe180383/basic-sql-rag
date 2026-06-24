@@ -224,7 +224,7 @@
     {
       "name": "cogs",
       "type": "NUMERIC(14,2)",
-      "description": "Cost of goods sold for the product",
+      "description": "Unit cost of goods sold for the product. Multiply by order_items.quantity when calculating total COGS or profit.",
       "profile": {
         "null_count": 0,
         "distinct_count": 2381,

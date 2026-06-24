@@ -21,6 +21,20 @@
     "question_families": ["revenue_calculation", "category_analysis"]
   },
   {
+    "question": "What are the top 5 products by profit, where profit means item revenue minus product COGS?",
+    "sql": "SELECT p.product_name, SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue, SUM(p.cogs * oi.quantity) AS total_cogs, SUM(oi.quantity * oi.unit_price - oi.discount_amount - p.cogs * oi.quantity) AS profit FROM order_items oi JOIN products p ON oi.product_id = p.product_id GROUP BY p.product_name ORDER BY profit DESC LIMIT 5",
+    "tables": ["order_items", "products"],
+    "pattern": "profit_calculation",
+    "question_families": ["revenue_calculation", "profitability_analysis", "product_breakdown"]
+  },
+  {
+    "question": "Which profitable products are not currently overstocked?",
+    "sql": "WITH latest_inventory AS (SELECT DISTINCT ON (product_id) product_id, overstock_flag FROM inventory ORDER BY product_id, snapshot_date DESC) SELECT p.product_name, SUM(oi.quantity * oi.unit_price - oi.discount_amount - p.cogs * oi.quantity) AS profit FROM order_items oi JOIN products p ON oi.product_id = p.product_id LEFT JOIN latest_inventory i ON i.product_id = p.product_id WHERE COALESCE(i.overstock_flag, FALSE) = FALSE GROUP BY p.product_name ORDER BY profit DESC LIMIT 5",
+    "tables": ["order_items", "products", "inventory"],
+    "pattern": "current_inventory_profit_filter",
+    "question_families": ["revenue_calculation", "profitability_analysis", "inventory_health", "product_breakdown"]
+  },
+  {
     "question": "Which city generated the most revenue?",
     "sql": "SELECT g.city, SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN geography g ON o.zip = g.zip GROUP BY g.city ORDER BY revenue DESC LIMIT 1",
     "tables": ["order_items", "orders", "geography"],
@@ -78,10 +92,17 @@
   },
   {
     "question": "What was daily Revenue and COGS last week?",
-    "sql": "SELECT Date, Revenue, COGS FROM sales WHERE Date >= CURRENT_DATE - INTERVAL '7 days' ORDER BY Date",
+    "sql": "SELECT date, revenue, cogs FROM sales WHERE date >= CURRENT_DATE - INTERVAL '7 days' ORDER BY date",
     "tables": ["sales"],
     "pattern": "daily_sales_aggregate",
     "question_families": ["daily_sales_aggregate", "daily_revenue", "daily_cogs"]
+  },
+  {
+    "question": "What was total COGS for the first half of 2020?",
+    "sql": "SELECT SUM(cogs) AS total_cogs FROM sales WHERE date >= DATE '2020-01-01' AND date < DATE '2020-07-01'",
+    "tables": ["sales"],
+    "pattern": "daily_sales_aggregate",
+    "question_families": ["daily_sales_aggregate", "daily_cogs"]
   },
   {
     "question": "What is the fill rate trend by month?",
@@ -103,6 +124,13 @@
     "tables": ["inventory", "products"],
     "pattern": "product_breakdown",
     "question_families": ["sell_through_analysis", "category_analysis"]
+  },
+  {
+    "question": "What is the average sell-through rate for the product category with the highest discount rate at the latest inventory snapshot?",
+    "sql": "WITH last_snapshot AS (SELECT MAX(snapshot_date) AS snapshot_date FROM inventory), snapshot_products AS (SELECT DISTINCT i.product_id, p.category FROM inventory i JOIN last_snapshot ls ON i.snapshot_date = ls.snapshot_date JOIN products p ON p.product_id = i.product_id), category_discount AS (SELECT sp.category, SUM(oi.discount_amount) / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS discount_rate FROM snapshot_products sp JOIN order_items oi ON oi.product_id = sp.product_id GROUP BY sp.category), top_discount_category AS (SELECT category FROM category_discount ORDER BY discount_rate DESC NULLS LAST LIMIT 1) SELECT AVG(i.sell_through_rate) AS avg_sell_through_rate FROM inventory i JOIN last_snapshot ls ON i.snapshot_date = ls.snapshot_date JOIN products p ON p.product_id = i.product_id JOIN top_discount_category tdc ON tdc.category = p.category",
+    "tables": ["inventory", "products", "order_items"],
+    "pattern": "latest_snapshot_discount_rate",
+    "question_families": ["sell_through_analysis", "discount_analysis", "inventory_health", "category_analysis"]
   },
   {
     "question": "How many customers are there in each region?",

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from textwrap import dedent
 
-from beacon.config import load_settings
+from beacon.config import FEEDBACK_EXAMPLES_PATH, load_settings
+from beacon.feedback_examples import candidate_from_attempt, save_candidate_example
 from beacon.pipeline_tools import (
     MAX_SQL_ATTEMPTS,
     call_llm,
@@ -17,6 +19,7 @@ from beacon.pipeline_tools import (
     review_attempt,
 )
 from beacon.retrieval import build_prompt, retrieve_context
+from beacon.retry import classify_retry_need, format_retry_context_update, repair_linked_context
 from beacon.sql import SqlValidationError, clean_sql, format_results, run_query, validate_sql
 
 
@@ -32,7 +35,23 @@ def split_questions(question: str) -> list[str]:
     """Split obviously independent requests while keeping dependent reasoning together."""
     normalized = " ".join(question.split())
     lowered = normalized.lower()
-    dependent_words = {"subtract", "difference", "compare", "versus", " vs ", "second", "2nd"}
+    dependent_words = {
+        "subtract",
+        "difference",
+        "compare",
+        "versus",
+        " vs ",
+        "second",
+        "2nd",
+        "that period",
+        "those",
+        "these",
+        "they",
+        "them",
+        "their",
+        "specific buyers",
+        "corresponding",
+    }
     if any(word in lowered for word in dependent_words):
         return [normalized]
 
@@ -98,6 +117,7 @@ def answer_section(question: str, settings: dict) -> dict:
         last_attempt = attempt
         last_result = result
         if attempt["satisfied"]:
+            maybe_save_feedback_example(question, attempt, result, context)
             answer, answer_error = safe_compose_final_answer(
                 messages,
                 settings,
@@ -115,6 +135,8 @@ def answer_section(question: str, settings: dict) -> dict:
                 "attempt_count": len(attempts),
                 "attempts": attempts,
             }
+        if attempt_number < MAX_SQL_ATTEMPTS:
+            apply_retry_repair(context, needs, messages, attempt)
 
     answer, answer_error = safe_compose_final_answer(
         messages,
@@ -170,6 +192,59 @@ def run_sql_attempt(
     attempt["review_reason"] = review["reason"]
     attempt["satisfied"] = review["satisfied"]
     return attempt, result
+
+
+def apply_retry_repair(
+    context: dict,
+    needs: dict,
+    messages: list[dict],
+    attempt: dict,
+) -> None:
+    """Update retry messages and linked context when repair evidence is available."""
+    semantic_model = context.get("semantic_model", [])
+    known_schema = {
+        "tables": {table.get("source_table") for table in semantic_model if table.get("source_table")},
+        "selected_tables": set(needs.get("tables", set())),
+    }
+    decision = classify_retry_need(attempt, known_schema)
+    if decision["action"] == "retrieval_repair" and semantic_model and context.get("linked_context"):
+        repaired = repair_linked_context(context["linked_context"], decision, semantic_model)
+        context["linked_context"] = repaired
+        context["schema_docs"] = repaired["schema_docs"]
+        context["join_paths"] = repaired["join_paths"]
+        context["schema_coverage"] = repaired["coverage"]
+        needs["tables"] = set(repaired["selected_tables"])
+        needs["columns"] = {item["column"] for item in repaired.get("selected_columns", [])}
+        needs["relations"] = set(repaired.get("join_paths", []))
+        messages.append(
+            {
+                "role": "user",
+                "content": format_retry_context_update(repaired, decision),
+            }
+        )
+    elif decision["action"] == "value_repair":
+        messages.append(
+            {
+                "role": "user",
+                "content": format_retry_context_update(context.get("linked_context", {}), decision),
+            }
+        )
+
+
+def maybe_save_feedback_example(
+    question: str,
+    attempt: dict,
+    result: dict | None,
+    context: dict,
+) -> None:
+    """Optionally save accepted SQL as a future example candidate."""
+    if os.getenv("BEACON_SAVE_EXAMPLE_CANDIDATES") != "1":
+        return
+    linked_context = context.get("linked_context")
+    if not linked_context:
+        return
+    candidate = candidate_from_attempt(question, attempt, result, linked_context)
+    save_candidate_example(FEEDBACK_EXAMPLES_PATH, candidate)
 
 
 def safe_compose_final_answer(

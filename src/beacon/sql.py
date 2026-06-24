@@ -35,6 +35,7 @@ UNSAFE_FUNCTIONS = {
     "lo_export",
     "pg_execute_server_program",
 }
+SAFE_TABLE_FUNCTIONS = {"generate_series"}
 
 
 def clean_sql(raw: str) -> str:
@@ -89,7 +90,7 @@ def extract_referenced_tables(sql: str) -> set[str]:
     tables: set[str] = set()
     for match in re.finditer(r"\b(?:from|join)\s+([a-z_][\w\.]*)", sql, re.IGNORECASE):
         table = match.group(1).split(".")[-1].lower()
-        if table not in cte_names:
+        if table not in cte_names and table not in SAFE_TABLE_FUNCTIONS:
             tables.add(table)
     return tables
 

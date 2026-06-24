@@ -1,14 +1,19 @@
 .env
 __pycache__/
 *.pyc
+.pytest_cache/
+.pytest_tmp/
 .venv/
 venv/
 .idea/
 .vscode/
 data/indices/**/*.json
+data/indices/**/*.npy
 data/indices/**/*.parquet
 data/processed/
 tests/test results/
+tests/.pytest_cache/
+tests/.pytest_tmp/
 benchmarks/.venv_spider2_snow/
 benchmarks/vendor/
 benchmarks/spider2_snow/results/

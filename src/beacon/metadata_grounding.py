@@ -25,6 +25,10 @@ DEFAULT_VALUE_ALIASES = {
         "men": "male",
         "male customers": "male",
     },
+    ("customers", "acquisition_channel"): {
+        "organic search": "organic_search",
+        "social media": "social_media",
+    },
     ("inventory", "overstock_flag"): {
         "overstock": True,
         "overstocked": True,
@@ -39,7 +43,7 @@ DEFAULT_VALUE_ALIASES = {
 }
 
 
-def ground_question_metadata(question: str, semantic_model: list[dict]) -> list[dict]:
+def ground_question_metadata(question: str, semantic_model: list[dict], settings: dict | None = None) -> list[dict]:
     """Return matched metadata evidence for values mentioned in a question."""
     question_text = normalize_text(question)
     evidence: list[dict] = []
@@ -69,7 +73,7 @@ def ground_question_metadata(question: str, semantic_model: list[dict]) -> list[
                     }
                 )
 
-    return evidence
+    return score_grounding_candidates(evidence)
 
 
 def apply_grounding_to_needs(needs: dict, evidence: list[dict]) -> dict:
@@ -80,8 +84,9 @@ def apply_grounding_to_needs(needs: dict, evidence: list[dict]) -> dict:
         "example_patterns": set(needs.get("example_patterns", set())),
     }
     for item in evidence:
-        grounded["tables"].add(item["table"])
-        grounded["columns"].add(item["column"])
+        if item.get("pin", True):
+            grounded["tables"].add(item["table"])
+            grounded["columns"].add(item["column"])
     grounded["relations"] = required_relations(grounded["tables"])
     return grounded
 
@@ -119,7 +124,48 @@ def grounding_candidates(table_name: str, column: dict) -> list[dict]:
     for alias, value in aliases.items():
         add_candidate(candidates, alias, value, "alias", 100)
 
-    return candidates
+    return sorted(candidates, key=lambda item: -int(item.get("score", 0)))
+
+
+def score_grounding_candidates(candidates: list[dict]) -> list[dict]:
+    """Add confidence and pin status to raw grounding candidates."""
+    grouped: dict[str, list[dict]] = {}
+    for item in candidates:
+        grouped.setdefault(item["term"], []).append(dict(item))
+
+    scored: list[dict] = []
+    for term, items in grouped.items():
+        ordered = sorted(items, key=lambda item: -int(item.get("score", 0)))
+        top_score = int(ordered[0].get("score", 0))
+        second_score = int(ordered[1].get("score", 0)) if len(ordered) > 1 else 0
+        margin = top_score - second_score
+        top_source = ordered[0].get("source", "")
+        ambiguous = len(ordered) > 1 and margin < 15 and top_source != "alias"
+        for item in ordered:
+            score = int(item.get("score", 0))
+            source = item.get("source", "")
+            strong_source = source in {"alias", "profile", "value_probe"}
+            confidence = "high" if score >= 85 else "medium" if score >= 65 else "low"
+            margin_ok = margin >= 15 or source == "alias"
+            pin = bool(score >= 80 and margin_ok and strong_source and not ambiguous)
+            item["confidence"] = confidence
+            item["status"] = "ambiguous" if ambiguous else "pinned" if pin else "candidate"
+            item["pin"] = pin
+            item["reasons"] = grounding_reasons(item, margin, ambiguous)
+            scored.append(item)
+    return sorted(scored, key=evidence_sort_key)
+
+
+def grounding_reasons(item: dict, margin: int, ambiguous: bool) -> list[str]:
+    """Explain why a grounding candidate received its status."""
+    reasons = [f"source:{item.get('source', 'unknown')}", f"score:{item.get('score', 0)}"]
+    if ambiguous:
+        reasons.append("ambiguous term")
+    else:
+        reasons.append(f"margin:{margin}")
+    if item.get("pin"):
+        reasons.append("pinned")
+    return reasons
 
 
 def add_candidate(

@@ -1,7 +1,11 @@
 """Tests for semantic metadata and value grounding."""
 
 from beacon.indexing_tools import load_semantic_model
-from beacon.metadata_grounding import apply_grounding_to_needs, ground_question_metadata
+from beacon.metadata_grounding import (
+    apply_grounding_to_needs,
+    ground_question_metadata,
+    score_grounding_candidates,
+)
 from beacon import retrieval
 from beacon.retrieval import build_prompt
 from beacon.retrieval_tools import extract_question_needs
@@ -102,7 +106,7 @@ def test_grounding_expands_complex_question_needs():
             "Did we get more new folks from social media or organic search in the first half of 2020? "
             "And what was the total COGS for that period?",
             {"customers", "sales"},
-            {"acquisition_channel", "COGS"},
+            {"acquisition_channel", "cogs"},
         ),
         (
             "List the top 2 cities where guys buy the most stuff and the corresponding total revenue from male customers.",
@@ -128,3 +132,48 @@ def test_grounding_expands_complex_question_needs():
 
         assert expected_tables.issubset(grounded["tables"]), question
         assert expected_columns.issubset(grounded["columns"]), question
+
+
+def test_score_grounding_candidates_pins_only_clear_high_confidence_matches():
+    candidates = [
+        {
+            "term": "apple pay",
+            "table": "orders",
+            "column": "payment_method",
+            "value": "apple_pay",
+            "source": "alias",
+            "score": 100,
+        },
+    ]
+
+    scored = score_grounding_candidates(candidates)
+
+    assert scored[0]["confidence"] == "high"
+    assert scored[0]["status"] == "pinned"
+    assert scored[0]["pin"] is True
+
+
+def test_score_grounding_candidates_marks_close_matches_ambiguous():
+    candidates = [
+        {
+            "term": "apple",
+            "table": "clients",
+            "column": "company_name",
+            "value": "Apple",
+            "source": "profile",
+            "score": 80,
+        },
+        {
+            "term": "apple",
+            "table": "orders",
+            "column": "payment_method",
+            "value": "apple_pay",
+            "source": "profile",
+            "score": 73,
+        },
+    ]
+
+    scored = score_grounding_candidates(candidates)
+
+    assert {item["status"] for item in scored} == {"ambiguous"}
+    assert not any(item["pin"] for item in scored)

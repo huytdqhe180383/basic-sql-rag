@@ -7,19 +7,16 @@ import os
 from llama_index.core import Settings, StorageContext, load_index_from_storage
 from llama_index.embeddings.openai import OpenAIEmbedding
 
-from beacon.config import FEW_SHOT_INDEX_DIR, SCHEMA_INDEX_DIR
-from beacon.indexing_tools import build_schema_docs, load_semantic_model
-from beacon.metadata_grounding import (
-    apply_grounding_to_needs,
-    format_matched_evidence,
-    ground_question_metadata,
-)
+from beacon.config import FEW_SHOT_INDEX_DIR, FEW_SHOT_QUERIES_PATH, SCHEMA_INDEX_DIR
+from beacon.indexing_tools import build_example_docs, build_schema_docs, load_json, load_semantic_model
 from beacon.retrieval_tools import (
     assess_coverage,
     extract_question_needs,
     matching_examples,
     rank_docs,
 )
+from beacon.prompting import build_sql_prompt
+from beacon.schema_linking import link_schema
 
 
 SCHEMA_K_START = 2
@@ -92,29 +89,29 @@ def retrieve_matching_examples(example_index, question: str, needs: dict, covera
 
 def retrieve_context(question: str) -> dict:
     """Retrieve schema and optional example context for one question."""
-    import concurrent.futures
     semantic_model = load_semantic_model()
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future_needs = executor.submit(extract_question_needs, question)
-        future_evidence = executor.submit(ground_question_metadata, question, semantic_model)
-        needs = future_needs.result()
-        matched_evidence = future_evidence.result()
-
-    needs = apply_grounding_to_needs(needs, matched_evidence)
-    forced_docs = schema_docs_for_tables(build_schema_docs(semantic_model), needs["tables"])
-    schema_index, example_index = load_indices()
-
-    schema_docs, coverage = retrieve_schema_until_covered(schema_index, question, needs, forced_docs)
-    example_docs = retrieve_matching_examples(example_index, question, needs, coverage)
-    coverage = assess_coverage(needs, schema_docs, example_docs)
+    few_shot = load_json(FEW_SHOT_QUERIES_PATH)
+    example_candidates = build_example_docs(few_shot, semantic_model)
+    linked = link_schema(question, semantic_model, few_shot_examples=example_candidates)
+    fallback_needs = linked.get("fallback_needs", {})
+    needs = {
+        "tables": set(linked["selected_tables"]),
+        "columns": {item["column"] for item in linked["selected_columns"]},
+        "relations": set(linked["join_paths"]),
+        "example_patterns": set(linked["signals"].get("intents", set()))
+        | set(fallback_needs.get("example_patterns", set())),
+    }
 
     return {
         "question_needs": needs,
-        "schema_docs": schema_docs,
-        "example_docs": example_docs,
-        "schema_coverage": coverage,
-        "matched_evidence": matched_evidence,
+        "schema_docs": linked["schema_docs"],
+        "example_docs": linked["example_docs"],
+        "schema_coverage": linked["coverage"],
+        "matched_evidence": linked["evidence"],
+        "evidence": linked["evidence"],
+        "join_paths": linked["join_paths"],
+        "linked_context": linked,
+        "semantic_model": semantic_model,
     }
 
 
@@ -143,14 +140,4 @@ def merge_schema_docs(retrieved_docs: list[dict], forced_docs: list[dict]) -> li
 
 def build_prompt(question: str, context: dict) -> str:
     """Build the final SQL prompt from retrieved schema and examples."""
-    sections = []
-    evidence = format_matched_evidence(context.get("matched_evidence", []))
-    if evidence:
-        sections.append(evidence)
-    sections.append("RELEVANT SCHEMA:")
-    sections.extend(doc["text"] for doc in context.get("schema_docs", []))
-    if context.get("example_docs"):
-        sections.append("EXAMPLE QUERIES:")
-        sections.extend(doc["text"] for doc in context["example_docs"])
-    sections.extend([f"QUESTION: {question}", "SQL:"])
-    return "\n\n---\n\n".join(sections)
+    return build_sql_prompt(question, context)
