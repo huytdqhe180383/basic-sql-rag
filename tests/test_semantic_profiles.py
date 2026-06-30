@@ -3,7 +3,7 @@
 import shutil
 from pathlib import Path
 
-from beacon.indexing_tools import (
+from beacon.indexing.profiles import (
     build_example_docs,
     build_schema_docs,
     load_semantic_model,

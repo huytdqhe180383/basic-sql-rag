@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from beacon import config
-from beacon.embeddings import HashEmbeddingAdapter
+from beacon.linking.embeddings import HashEmbeddingAdapter
 from beacon.indexing import persist_local_schema_vectors
-from beacon.vector_store import load_vector_index, save_vector_index, search_vector_index
+from beacon.linking.vector_store import load_vector_index, save_vector_index, search_vector_index
 
 
 def test_local_vector_paths_are_defined_under_data_indices():
@@ -48,8 +48,8 @@ def test_persist_local_schema_vectors_writes_expected_files(monkeypatch, tmp_pat
         }
     ]
 
-    monkeypatch.setattr("beacon.indexing.LOCAL_VECTOR_INDEX_DIR", tmp_path)
-    monkeypatch.setattr("beacon.indexing.default_embedding_adapter", lambda: HashEmbeddingAdapter(dimensions=16))
+    monkeypatch.setattr("beacon.indexing.builder.LOCAL_VECTOR_INDEX_DIR", tmp_path)
+    monkeypatch.setattr("beacon.indexing.builder.default_embedding_adapter", lambda: HashEmbeddingAdapter(dimensions=16))
 
     persist_local_schema_vectors(semantic_model)
 

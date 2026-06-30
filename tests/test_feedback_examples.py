@@ -1,6 +1,6 @@
 import json
 
-from beacon.feedback_examples import candidate_from_attempt, save_candidate_example
+from beacon.runtime.feedback_examples import candidate_from_attempt, save_candidate_example
 
 
 def test_candidate_from_attempt_extracts_reviewed_query_metadata():

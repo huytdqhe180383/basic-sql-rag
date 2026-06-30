@@ -1,4 +1,4 @@
-from beacon.retry import classify_retry_need, repair_linked_context
+from beacon.runtime.retry import classify_retry_need, repair_linked_context
 
 
 def test_classify_retry_need_requests_retrieval_repair_for_known_table_outside_context():

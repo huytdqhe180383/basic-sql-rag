@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`src/beacon/example_retrieval.py` ranks few-shot SQL examples by structural overlap with the linked context.
+`src/beacon/linking/example_retrieval.py` ranks few-shot SQL examples by structural overlap with the linked context.
 
 ## Inputs
 
@@ -21,16 +21,7 @@ A ranked list of examples for the SQL prompt.
 
 ## Diagram
 
-```mermaid
-flowchart TD
-    A["Linked context"] --> B["Selected tables"]
-    A --> C["Metrics, filters, time grain"]
-    D["Few-shot examples"] --> E["Structural scoring"]
-    B --> E
-    C --> E
-    E --> F["Top examples"]
-    F --> G["Prompt examples section"]
-```
+![modules_example_retrieval_diagram_1](../diagram/modules_example_retrieval_1.png)
 
 ## Failure Behavior
 

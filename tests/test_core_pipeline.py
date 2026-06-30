@@ -2,15 +2,15 @@
 
 import pytest
 
-from beacon import pipeline
-from beacon.retrieval import (
+from beacon.runtime import pipeline
+from beacon.linking.retrieval import (
     assess_coverage,
     build_prompt,
     extract_question_needs,
     matching_examples,
     rank_docs,
 )
-from beacon.sql import SqlValidationError, validate_sql
+from beacon.runtime.sql import SqlValidationError, validate_sql
 
 
 def test_question_understanding_selects_relevant_schema_needs():

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from beacon import pipeline
+from beacon.runtime import pipeline
 
 
 def make_context(tables: set[str] | None = None) -> dict:

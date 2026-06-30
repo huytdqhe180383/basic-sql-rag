@@ -1,4 +1,4 @@
-from beacon.prompting import build_sql_prompt
+from beacon.runtime.prompting import build_sql_prompt
 
 
 def test_build_sql_prompt_orders_evidence_schema_examples_and_question():

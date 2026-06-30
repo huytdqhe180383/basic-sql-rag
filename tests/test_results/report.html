@@ -1,0 +1,710 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beacon Pipeline Evaluation Report</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; padding: 20px; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 40px; }
+        .test-case { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 6px solid #3498db; }
+        .question { font-size: 1.2em; font-weight: bold; color: #2c3e50; margin-bottom: 15px; }
+        .section { margin-top: 15px; padding-left: 15px; border-left: 3px solid #ecf0f1; }
+        .section-title { font-weight: bold; color: #e67e22; }
+        pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 0.9em; }
+        .answer { background: #e8f6f3; border: 1px solid #1abc9c; padding: 10px; border-radius: 5px; margin-top: 10px; white-space: pre-wrap; }
+        .error { background: #fdedec; border: 1px solid #e74c3c; padding: 10px; border-radius: 5px; margin-top: 10px; color: #c0392b; }
+        .analysis { margin-top: 15px; padding: 15px; background: #fdf2e9; border-radius: 5px; border: 1px solid #f39c12; }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; color: white; margin-bottom: 10px; }
+        .status-completed { background-color: #27ae60; }
+        .status-partial { background-color: #f39c12; }
+        .status-failed { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+    <h1>Beacon Pipeline Evaluation Report (English)</h1>
+    <div id="content">
+        
+        <div class='test-case'>
+            <span class='status-badge status-completed'>COMPLETED</span>
+            <div class='question'>Q1: How many order were refunded in 2017 and which city has the most canceled order?</div>
+            <div class='sections'>
+                
+            <div class='section'>
+                <div class='section-title'>Section: How many order were refunded in 2017</div>
+                <div>Attempts: 2</div>
+                <pre><code>SELECT COUNT(*) 
+FROM orders 
+WHERE order_status = &#x27;returned&#x27; 
+AND DATE_PART(&#x27;year&#x27;, order_date) = 2017</code></pre>
+                <div class='answer'><b>Response:</b><br>There were 4,247 orders refunded in 2017.</div>
+                
+                
+            <div class='section'>
+                <div class='section-title'>Attempt 1: validation_error</div>
+                <pre><code>SELECT COUNT(*) 
+FROM orders 
+WHERE order_status = &#x27;returned&#x27; 
+AND EXTRACT(YEAR FROM order_date) = 2017</code></pre>
+                <div>The SQL query is referencing &#x27;order_date&#x27; which is not available in the provided schema context.</div>
+                <div class='error'>SQL references tables outside context: order_date.</div>
+            </div>
+            
+
+            <div class='section'>
+                <div class='section-title'>Attempt 2: completed</div>
+                <pre><code>SELECT COUNT(*) 
+FROM orders 
+WHERE order_status = &#x27;returned&#x27; 
+AND DATE_PART(&#x27;year&#x27;, order_date) = 2017</code></pre>
+                <div>The query successfully counted the number of orders with status &#x27;returned&#x27; in the year 2017, which directly answers the question.</div>
+                <div class='error'></div>
+            </div>
+            
+            </div>
+            
+            <div class='section'>
+                <div class='section-title'>Section: which city has the most canceled order</div>
+                <div>Attempts: 1</div>
+                <pre><code>SELECT g.city, COUNT(o.order_id) AS canceled_orders FROM orders o JOIN geography g ON o.zip = g.zip WHERE o.order_status = &#x27;cancelled&#x27; GROUP BY g.city ORDER BY canceled_orders DESC LIMIT 1</code></pre>
+                <div class='answer'><b>Response:</b><br>The city with the most canceled orders is Son Tay, with 2,075 canceled orders.</div>
+                
+                
+            <div class='section'>
+                <div class='section-title'>Attempt 1: completed</div>
+                <pre><code>SELECT g.city, COUNT(o.order_id) AS canceled_orders FROM orders o JOIN geography g ON o.zip = g.zip WHERE o.order_status = &#x27;cancelled&#x27; GROUP BY g.city ORDER BY canceled_orders DESC LIMIT 1</code></pre>
+                <div>The query correctly identifies the city with the most canceled orders by joining the orders table with the geography table, filtering for cancelled orders, grouping by city, and ordering by count descending.</div>
+                <div class='error'></div>
+            </div>
+            
+            </div>
+            
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+        <div class='test-case'>
+            <span class='status-badge status-completed'>COMPLETED</span>
+            <div class='question'>Q2: Tell me the 3 most profitable products (total revenue minus cogs) ever, but exclude items currently flagged as overstock.</div>
+            <div class='sections'>
+                
+            <div class='section'>
+                <div class='section-title'>Section: Tell me the 3 most profitable products (total revenue minus cogs) ever, but exclude items currently flagged as overstock</div>
+                <div>Attempts: 1</div>
+                <pre><code>WITH latest_inventory AS (
+    SELECT DISTINCT ON (product_id) product_id, overstock_flag
+    FROM inventory
+    ORDER BY product_id, snapshot_date DESC
+)
+SELECT 
+    p.product_name,
+    SUM((oi.unit_price * oi.quantity) - (p.cogs * oi.quantity) - oi.discount_amount) AS total_profit
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+LEFT JOIN latest_inventory li ON p.product_id = li.product_id
+WHERE COALESCE(li.overstock_flag, FALSE) = FALSE
+GROUP BY p.product_name
+ORDER BY total_profit DESC
+LIMIT 3</code></pre>
+                <div class='answer'><b>Response:</b><br>Based on the analysis of all orders and current inventory status, here are the 3 most profitable products (after excluding items currently flagged as overstock):
+
+1. **LotusWear UE-16** - Total Profit: $1,263,884.31
+2. **PhoenixWear UM-15** - Total Profit: $1,041,729.04
+3. **DragonWear UM-01** - Total Profit: $1,024,986.13
+
+These products have generated the highest total profit (calculated as revenue minus cost of goods sold minus discounts) while currently maintaining healthy inventory levels (not overstocked).</div>
+                
+                
+            <div class='section'>
+                <div class='section-title'>Attempt 1: completed</div>
+                <pre><code>WITH latest_inventory AS (
+    SELECT DISTINCT ON (product_id) product_id, overstock_flag
+    FROM inventory
+    ORDER BY product_id, snapshot_date DESC
+)
+SELECT 
+    p.product_name,
+    SUM((oi.unit_price * oi.quantity) - (p.cogs * oi.quantity) - oi.discount_amount) AS total_profit
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+LEFT JOIN latest_inventory li ON p.product_id = li.product_id
+WHERE COALESCE(li.overstock_flag, FALSE) = FALSE
+GROUP BY p.product_name
+ORDER BY total_profit DESC
+LIMIT 3</code></pre>
+                <div>The query correctly calculates total profit as (revenue - cogs - discounts), excludes products currently flagged as overstock, and returns the top 3 most profitable products as requested.</div>
+                <div class='error'></div>
+            </div>
+            
+            </div>
+            
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+        <div class='test-case'>
+            <span class='status-badge status-completed'>COMPLETED</span>
+            <div class='question'>Q3: Did we get more new folks from social media or organic search in the first half of 2020? And what was the total COGS for that period?</div>
+            <div class='sections'>
+                
+            <div class='section'>
+                <div class='section-title'>Section: Did we get more new folks from social media or organic search in the first half of 2020? And what was the total COGS for that period?</div>
+                <div>Attempts: 1</div>
+                <pre><code>SELECT 
+    COUNT(CASE WHEN acquisition_channel = &#x27;social_media&#x27; THEN 1 END) AS social_media_customers,
+    COUNT(CASE WHEN acquisition_channel = &#x27;organic_search&#x27; THEN 1 END) AS organic_search_customers,
+    (SELECT SUM(cogs) FROM sales WHERE date &gt;= DATE &#x27;2020-01-01&#x27; AND date &lt; DATE &#x27;2020-07-01&#x27;) AS total_cogs
+FROM customers
+WHERE signup_date &gt;= DATE &#x27;2020-01-01&#x27; AND signup_date &lt; DATE &#x27;2020-07-01&#x27;</code></pre>
+                <div class='answer'><b>Response:</b><br>In the first half of 2020, we acquired more new customers through organic search (2,500 customers) compared to social media (1,691 customers). The total cost of goods sold (COGS) for this period was $499,076,942.58.</div>
+                
+                
+            <div class='section'>
+                <div class='section-title'>Attempt 1: completed</div>
+                <pre><code>SELECT 
+    COUNT(CASE WHEN acquisition_channel = &#x27;social_media&#x27; THEN 1 END) AS social_media_customers,
+    COUNT(CASE WHEN acquisition_channel = &#x27;organic_search&#x27; THEN 1 END) AS organic_search_customers,
+    (SELECT SUM(cogs) FROM sales WHERE date &gt;= DATE &#x27;2020-01-01&#x27; AND date &lt; DATE &#x27;2020-07-01&#x27;) AS total_cogs
+FROM customers
+WHERE signup_date &gt;= DATE &#x27;2020-01-01&#x27; AND signup_date &lt; DATE &#x27;2020-07-01&#x27;</code></pre>
+                <div>The query correctly identifies the number of new customers from social media and organic search in the first half of 2020, and also provides the total COGS for that period. The results show that organic search brought in more new customers (2500) than social media (1691) during this time, and the total COGS was 499076942.58.</div>
+                <div class='error'></div>
+            </div>
+            
+            </div>
+            
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+        <div class='test-case'>
+            <span class='status-badge status-completed'>COMPLETED</span>
+            <div class='question'>Q4: I need to know the region that brought in the most revenue via apple pay in 2022. Also, what was the average days of supply for all products at the end of 2022?</div>
+            <div class='sections'>
+                
+            <div class='section'>
+                <div class='section-title'>Section: I need to know the region that brought in the most revenue via apple pay in 2022. Also, what was the average days of supply for all products at the end of 2022</div>
+                <div>Attempts: 3</div>
+                <pre><code>WITH apple_pay_revenue AS (
+    SELECT 
+        g.region,
+        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.order_id
+    JOIN geography g ON o.zip = g.zip
+    WHERE o.payment_method = &#x27;apple_pay&#x27;
+    AND DATE_PART(&#x27;year&#x27;, o.order_date) = 2022
+    GROUP BY g.region
+),
+supply_metrics AS (
+    SELECT 
+        AVG(days_of_supply) AS avg_days_of_supply
+    FROM inventory
+    WHERE snapshot_date = &#x27;2022-12-31&#x27;
+)
+SELECT 
+    apr.region,
+    apr.revenue,
+    sm.avg_days_of_supply
+FROM apple_pay_revenue apr
+CROSS JOIN supply_metrics sm
+ORDER BY apr.revenue DESC
+LIMIT 1</code></pre>
+                <div class='answer'><b>Response:</b><br>Based on the analysis of the data:
+
+1. The region that brought in the most revenue via Apple Pay in 2022 was **East** with a total revenue of **$53,159,049.41**.
+
+2. The average days of supply for all products at the end of 2022 was **1,869.23 days**.
+
+These figures were calculated by analyzing Apple Pay transactions in 2022 by region and examining the inventory snapshot from December 31, 2022.</div>
+                
+                
+            <div class='section'>
+                <div class='section-title'>Attempt 1: validation_error</div>
+                <pre><code>SELECT 
+    g.region,
+    SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue,
+    AVG(i.days_of_supply) AS avg_days_of_supply
+FROM order_items oi
+JOIN orders o ON oi.order_id = o.order_id
+JOIN geography g ON o.zip = g.zip
+JOIN inventory i ON oi.product_id = i.product_id
+WHERE o.payment_method = &#x27;apple_pay&#x27;
+AND EXTRACT(YEAR FROM o.order_date) = 2022
+AND i.snapshot_date = &#x27;2022-12-31&#x27;
+GROUP BY g.region
+ORDER BY revenue DESC
+LIMIT 1</code></pre>
+                <div>The query incorrectly joins inventory with order_items on product_id without considering that we need separate calculations for revenue by region and average days of supply. The current approach mixes these two unrelated metrics in a single query which leads to incorrect results.</div>
+                <div class='error'>SQL references tables outside context: order_date.</div>
+            </div>
+            
+
+            <div class='section'>
+                <div class='section-title'>Attempt 2: validation_error</div>
+                <pre><code>WITH apple_pay_revenue AS (
+    SELECT 
+        g.region,
+        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.order_id
+    JOIN geography g ON o.zip = g.zip
+    WHERE o.payment_method = &#x27;apple_pay&#x27;
+    AND EXTRACT(YEAR FROM o.order_date) = 2022
+    GROUP BY g.region
+),
+supply_metrics AS (
+    SELECT 
+        AVG(days_of_supply) AS avg_days_of_supply
+    FROM inventory
+    WHERE snapshot_date = &#x27;2022-12-31&#x27;
+)
+SELECT 
+    apr.region,
+    apr.revenue,
+    sm.avg_days_of_supply
+FROM apple_pay_revenue apr
+CROSS JOIN supply_metrics sm
+ORDER BY apr.revenue DESC
+LIMIT 1</code></pre>
+                <div>The query still references &#x27;order_date&#x27; which is not directly accessible in the WHERE clause of the CTE because it&#x27;s not properly qualified with the table alias. The EXTRACT function is trying to use o.order_date but the error suggests the reference is outside the allowed context.</div>
+                <div class='error'>SQL references tables outside context: order_date.</div>
+            </div>
+            
+
+            <div class='section'>
+                <div class='section-title'>Attempt 3: completed</div>
+                <pre><code>WITH apple_pay_revenue AS (
+    SELECT 
+        g.region,
+        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.order_id
+    JOIN geography g ON o.zip = g.zip
+    WHERE o.payment_method = &#x27;apple_pay&#x27;
+    AND DATE_PART(&#x27;year&#x27;, o.order_date) = 2022
+    GROUP BY g.region
+),
+supply_metrics AS (
+    SELECT 
+        AVG(days_of_supply) AS avg_days_of_supply
+    FROM inventory
+    WHERE snapshot_date = &#x27;2022-12-31&#x27;
+)
+SELECT 
+    apr.region,
+    apr.revenue,
+    sm.avg_days_of_supply
+FROM apple_pay_revenue apr
+CROSS JOIN supply_metrics sm
+ORDER BY apr.revenue DESC
+LIMIT 1</code></pre>
+                <div>The query successfully returns both pieces of requested information: the region that brought in the most revenue via Apple Pay in 2022 (east with $53,159,049.41) and the average days of supply for all products at the end of 2022 (1869.23 days). The query correctly uses CTEs to separate the two calculations and then combines them.</div>
+                <div class='error'></div>
+            </div>
+            
+            </div>
+            
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+        <div class='test-case'>
+            <span class='status-badge status-unknown'>UNKNOWN</span>
+            <div class='question'>Q5: List the top 2 cities where guys buy the most stuff (total quantity) and the corresponding total revenue from male customers.</div>
+            <div class='sections'>
+                
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+        <div class='test-case'>
+            <span class='status-badge status-unknown'>UNKNOWN</span>
+            <div class='question'>Q6: Show me how many times we ran out of stock for products in the &#x27;streetwear&#x27; category, grouped by month of 2022. Also include the average fill rate for those items.</div>
+            <div class='sections'>
+                
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+        <div class='test-case'>
+            <span class='status-badge status-unknown'>UNKNOWN</span>
+            <div class='question'>Q7: Which acquisition channel brings in the most Apple Pay buyers, and what is the most common age bracket of those specific buyers?</div>
+            <div class='sections'>
+                
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+        <div class='test-case'>
+            <span class='status-badge status-completed'>COMPLETED</span>
+            <div class='question'>Q8: Find the district with the highest refund rate (returned orders / total orders). How much revenue did we lose to those returns?</div>
+            <div class='sections'>
+                
+            <div class='section'>
+                <div class='section-title'>Section: Find the district with the highest refund rate (returned orders / total orders). How much revenue did we lose to those returns?</div>
+                <div>Attempts: 1</div>
+                <pre><code>WITH district_stats AS (
+    SELECT 
+        g.district,
+        COUNT(CASE WHEN o.order_status = &#x27;returned&#x27; THEN 1 END) AS returned_orders,
+        COUNT(*) AS total_orders,
+        SUM(CASE WHEN o.order_status = &#x27;returned&#x27; THEN oi.quantity * oi.unit_price - oi.discount_amount ELSE 0 END) AS revenue_lost
+    FROM orders o
+    JOIN geography g ON o.zip = g.zip
+    JOIN order_items oi ON o.order_id = oi.order_id
+    GROUP BY g.district
+),
+refund_rates AS (
+    SELECT 
+        district,
+        returned_orders::FLOAT / total_orders AS refund_rate,
+        revenue_lost
+    FROM district_stats
+)
+SELECT 
+    district,
+    refund_rate,
+    revenue_lost
+FROM refund_rates
+ORDER BY refund_rate DESC
+LIMIT 1</code></pre>
+                <div class='answer'><b>Response:</b><br>District #24 has the highest refund rate at 6.07% (returned orders / total orders). The revenue lost to those returns was $26,210,601.64.</div>
+                
+                
+            <div class='section'>
+                <div class='section-title'>Attempt 1: completed</div>
+                <pre><code>WITH district_stats AS (
+    SELECT 
+        g.district,
+        COUNT(CASE WHEN o.order_status = &#x27;returned&#x27; THEN 1 END) AS returned_orders,
+        COUNT(*) AS total_orders,
+        SUM(CASE WHEN o.order_status = &#x27;returned&#x27; THEN oi.quantity * oi.unit_price - oi.discount_amount ELSE 0 END) AS revenue_lost
+    FROM orders o
+    JOIN geography g ON o.zip = g.zip
+    JOIN order_items oi ON o.order_id = oi.order_id
+    GROUP BY g.district
+),
+refund_rates AS (
+    SELECT 
+        district,
+        returned_orders::FLOAT / total_orders AS refund_rate,
+        revenue_lost
+    FROM district_stats
+)
+SELECT 
+    district,
+    refund_rate,
+    revenue_lost
+FROM refund_rates
+ORDER BY refund_rate DESC
+LIMIT 1</code></pre>
+                <div>The query successfully identified the district with the highest refund rate (district #24 with 6.07%) and calculated the associated revenue loss ($26,210,601.64). The logic correctly computes refund rate as returned orders over total orders and aggregates revenue loss from returned items.</div>
+                <div class='error'></div>
+            </div>
+            
+            </div>
+            
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+        <div class='test-case'>
+            <span class='status-badge status-completed'>COMPLETED</span>
+            <div class='question'>Q9: What is the average sell-through rate of the most heavily discounted product category during the last recorded inventory snapshot?</div>
+            <div class='sections'>
+                
+            <div class='section'>
+                <div class='section-title'>Section: What is the average sell-through rate of the most heavily discounted product category during the last recorded inventory snapshot</div>
+                <div>Attempts: 1</div>
+                <pre><code>WITH last_snapshot AS (
+    SELECT MAX(snapshot_date) AS snapshot_date
+    FROM inventory
+),
+category_discounts AS (
+    SELECT 
+        p.category,
+        SUM(oi.discount_amount) / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS discount_rate
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.product_id
+    GROUP BY p.category
+),
+most_discounted_category AS (
+    SELECT category
+    FROM category_discounts
+    ORDER BY discount_rate DESC
+    LIMIT 1
+)
+SELECT AVG(i.sell_through_rate) AS avg_sell_through_rate
+FROM inventory i
+JOIN last_snapshot ls ON i.snapshot_date = ls.snapshot_date
+JOIN products p ON i.product_id = p.product_id
+JOIN most_discounted_category mdc ON p.category = mdc.category</code></pre>
+                <div class='answer'><b>Response:</b><br>The average sell-through rate of the most heavily discounted product category during the last recorded inventory snapshot is 0.1183 (or 11.83%).
+
+This was determined by:
+1. Identifying the product category with the highest overall discount rate across all orders
+2. Finding the most recent inventory snapshot date
+3. Calculating the average sell-through rate for products in that heavily discounted category during that final snapshot period</div>
+                
+                
+            <div class='section'>
+                <div class='section-title'>Attempt 1: completed</div>
+                <pre><code>WITH last_snapshot AS (
+    SELECT MAX(snapshot_date) AS snapshot_date
+    FROM inventory
+),
+category_discounts AS (
+    SELECT 
+        p.category,
+        SUM(oi.discount_amount) / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS discount_rate
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.product_id
+    GROUP BY p.category
+),
+most_discounted_category AS (
+    SELECT category
+    FROM category_discounts
+    ORDER BY discount_rate DESC
+    LIMIT 1
+)
+SELECT AVG(i.sell_through_rate) AS avg_sell_through_rate
+FROM inventory i
+JOIN last_snapshot ls ON i.snapshot_date = ls.snapshot_date
+JOIN products p ON i.product_id = p.product_id
+JOIN most_discounted_category mdc ON p.category = mdc.category</code></pre>
+                <div>The query correctly identifies the most heavily discounted product category and calculates the average sell-through rate for that category during the last recorded inventory snapshot. The result shows a single value (0.1183) which directly answers the question.</div>
+                <div class='error'></div>
+            </div>
+            
+            </div>
+            
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+        <div class='test-case'>
+            <span class='status-badge status-completed'>COMPLETED</span>
+            <div class='question'>Q10: We are looking at people who signed up in 2018. Which source gives us the most loyal buyers (most orders per person), and what color of clothing do they like to buy most?</div>
+            <div class='sections'>
+                
+            <div class='section'>
+                <div class='section-title'>Section: We are looking at people who signed up in 2018. Which source gives us the most loyal buyers (most orders per person), and what color of clothing do they like to buy most?</div>
+                <div>Attempts: 2</div>
+                <pre><code>WITH customers_2018 AS (
+    SELECT 
+        customer_id,
+        acquisition_channel
+    FROM customers
+    WHERE signup_date &gt;= &#x27;2018-01-01&#x27; AND signup_date &lt;= &#x27;2018-12-31&#x27;
+),
+customer_orders AS (
+    SELECT 
+        c.customer_id,
+        c.acquisition_channel,
+        COUNT(o.order_id) AS total_orders
+    FROM customers_2018 c
+    JOIN orders o ON c.customer_id = o.customer_id
+    GROUP BY c.customer_id, c.acquisition_channel
+),
+channel_avg_orders AS (
+    SELECT 
+        acquisition_channel,
+        AVG(total_orders) AS avg_orders_per_person
+    FROM customer_orders
+    GROUP BY acquisition_channel
+),
+top_channel AS (
+    SELECT acquisition_channel
+    FROM channel_avg_orders
+    ORDER BY avg_orders_per_person DESC
+    LIMIT 1
+),
+top_channel_customers AS (
+    SELECT co.customer_id
+    FROM customer_orders co
+    JOIN top_channel tc ON co.acquisition_channel = tc.acquisition_channel
+),
+customer_colors AS (
+    SELECT 
+        p.color,
+        SUM(oi.quantity) AS total_quantity
+    FROM top_channel_customers tc
+    JOIN orders o ON tc.customer_id = o.customer_id
+    JOIN order_items oi ON o.order_id = oi.order_id
+    JOIN products p ON oi.product_id = p.product_id
+    WHERE p.category IN (&#x27;streetwear&#x27;, &#x27;outdoor&#x27;, &#x27;casual&#x27;, &#x27;genz&#x27;)
+    GROUP BY p.color
+)
+SELECT 
+    tc.acquisition_channel AS source,
+    cc.color AS favorite_color
+FROM top_channel tc
+CROSS JOIN (
+    SELECT color
+    FROM customer_colors
+    ORDER BY total_quantity DESC
+    LIMIT 1
+) cc</code></pre>
+                <div class='answer'><b>Response:</b><br>Based on the analysis of customers who signed up in 2018:
+
+The most loyal buyers (those with the highest average number of orders per person) came from the &quot;direct&quot; acquisition channel.
+
+These customers tend to purchase products in the color &quot;purple&quot; most frequently.</div>
+                
+                
+            <div class='section'>
+                <div class='section-title'>Attempt 1: completed</div>
+                <pre><code>WITH customers_2018 AS (
+    SELECT 
+        customer_id,
+        acquisition_channel
+    FROM customers
+    WHERE signup_date &gt;= &#x27;2018-01-01&#x27; AND signup_date &lt;= &#x27;2018-12-31&#x27;
+),
+customer_orders AS (
+    SELECT 
+        c.customer_id,
+        c.acquisition_channel,
+        COUNT(o.order_id) AS total_orders
+    FROM customers_2018 c
+    JOIN orders o ON c.customer_id = o.customer_id
+    GROUP BY c.customer_id, c.acquisition_channel
+),
+channel_avg_orders AS (
+    SELECT 
+        acquisition_channel,
+        AVG(total_orders) AS avg_orders_per_person
+    FROM customer_orders
+    GROUP BY acquisition_channel
+),
+top_channel AS (
+    SELECT acquisition_channel
+    FROM channel_avg_orders
+    ORDER BY avg_orders_per_person DESC
+    LIMIT 1
+),
+top_channel_customers AS (
+    SELECT co.customer_id
+    FROM customer_orders co
+    JOIN top_channel tc ON co.acquisition_channel = tc.acquisition_channel
+),
+customer_colors AS (
+    SELECT 
+        tc.customer_id,
+        p.color,
+        SUM(oi.quantity) AS total_quantity
+    FROM top_channel_customers tc
+    JOIN orders o ON tc.customer_id = o.customer_id
+    JOIN order_items oi ON o.order_id = oi.order_id
+    JOIN products p ON oi.product_id = p.product_id
+    WHERE p.category = &#x27;clothing&#x27;
+    GROUP BY tc.customer_id, p.color
+)
+SELECT 
+    tc.acquisition_channel AS source,
+    cc.color AS favorite_color
+FROM top_channel tc
+CROSS JOIN (
+    SELECT color
+    FROM customer_colors
+    GROUP BY color
+    ORDER BY SUM(total_quantity) DESC
+    LIMIT 1
+) cc</code></pre>
+                <div>The query returned no results. This is likely because there are no products with category &#x27;clothing&#x27; in the products table. Looking at the schema, the actual categories are &#x27;streetwear&#x27;, &#x27;outdoor&#x27;, &#x27;casual&#x27;, and &#x27;genz&#x27;. The query should use one of these valid categories instead of &#x27;clothing&#x27;.</div>
+                <div class='error'></div>
+            </div>
+            
+
+            <div class='section'>
+                <div class='section-title'>Attempt 2: completed</div>
+                <pre><code>WITH customers_2018 AS (
+    SELECT 
+        customer_id,
+        acquisition_channel
+    FROM customers
+    WHERE signup_date &gt;= &#x27;2018-01-01&#x27; AND signup_date &lt;= &#x27;2018-12-31&#x27;
+),
+customer_orders AS (
+    SELECT 
+        c.customer_id,
+        c.acquisition_channel,
+        COUNT(o.order_id) AS total_orders
+    FROM customers_2018 c
+    JOIN orders o ON c.customer_id = o.customer_id
+    GROUP BY c.customer_id, c.acquisition_channel
+),
+channel_avg_orders AS (
+    SELECT 
+        acquisition_channel,
+        AVG(total_orders) AS avg_orders_per_person
+    FROM customer_orders
+    GROUP BY acquisition_channel
+),
+top_channel AS (
+    SELECT acquisition_channel
+    FROM channel_avg_orders
+    ORDER BY avg_orders_per_person DESC
+    LIMIT 1
+),
+top_channel_customers AS (
+    SELECT co.customer_id
+    FROM customer_orders co
+    JOIN top_channel tc ON co.acquisition_channel = tc.acquisition_channel
+),
+customer_colors AS (
+    SELECT 
+        p.color,
+        SUM(oi.quantity) AS total_quantity
+    FROM top_channel_customers tc
+    JOIN orders o ON tc.customer_id = o.customer_id
+    JOIN order_items oi ON o.order_id = oi.order_id
+    JOIN products p ON oi.product_id = p.product_id
+    WHERE p.category IN (&#x27;streetwear&#x27;, &#x27;outdoor&#x27;, &#x27;casual&#x27;, &#x27;genz&#x27;)
+    GROUP BY p.color
+)
+SELECT 
+    tc.acquisition_channel AS source,
+    cc.color AS favorite_color
+FROM top_channel tc
+CROSS JOIN (
+    SELECT color
+    FROM customer_colors
+    ORDER BY total_quantity DESC
+    LIMIT 1
+) cc</code></pre>
+                <div>The query successfully returned the acquisition channel with the highest average orders per person for customers who signed up in 2018 (&#x27;direct&#x27;) and the color of clothing items they purchase most (&#x27;purple&#x27;). The query correctly identified valid product categories and aggregated the data appropriately.</div>
+                <div class='error'></div>
+            </div>
+            
+            </div>
+            
+            </div>
+            <div class='analysis'>
+                <b>Note:</b> This report is generated from the latest JSON run. See docs/evaluation.md for the current accuracy notes.
+            </div>
+        </div>
+        
+    </div>
+</body>
+</html>

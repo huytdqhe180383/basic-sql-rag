@@ -1,20 +1,22 @@
 # Beacon - Natural Language to SQL
 
-Ask questions about your e-commerce data in plain English. Beacon retrieves only the relevant schema context, asks an LLM to generate PostgreSQL, executes the query, and returns formatted results.
+Beacon is a small metadata-grounded natural-language-to-SQL research MVP. It turns an analytics question into grounded schema context, asks an LLM for one PostgreSQL query, validates that query as read-only SQL, executes it, reviews the result, and retries when the failure mode is repairable.
 
-For a fresh local machine setup, read `setup.md` first. It covers the non-repo prerequisites such as PostgreSQL, the `.env` file, and the extra dev dependency used for testing.
+The project is intentionally simple. The core pipeline uses plain Python functions and dictionaries, with the implementation split into indexing, linking, runtime, and app entrypoints.
 
-## Quick Start
+## What To Read First
 
-### 1. Install dependencies
+Start with `setup.md` if the machine is new. It covers PostgreSQL, `uv`, the `.env` file, and local dependency setup.
 
-```bash
-pip install -r requirements.txt
-```
+Use `docs/source_layout.md` as the codebase map. Use `docs/pipeline.md` for the compact pipeline diagram, `docs/pipeline_deep_dive.md` for the deeper runtime explanation, and `docs/evaluation.md` for the latest test and evaluation notes.
 
-### 2. Set up environment
+The submission-ready method report is generated at `docs/reports/beacon_method_report_submission.docx` and `docs/reports/beacon_method_report_submission.pdf`.
 
-Copy `.env.example` to `.env` and fill in your credentials:
+## Prerequisites
+
+Install Python 3.11 or newer, `uv`, and PostgreSQL. Create a database that Beacon can write during setup and read during question answering. The default local settings assume PostgreSQL on `localhost:5432`.
+
+Copy `.env.example` to `.env`, then fill in the model and database settings:
 
 ```env
 OPENAI_API_KEY=sk-...
@@ -28,97 +30,111 @@ PGPASSWORD=yourpassword
 PGDATABASE=postgres
 ```
 
-### 3. Build the retrieval indices
+## Install
+
+From the repository root:
 
 ```powershell
-$env:PYTHONPATH="src"
-python -m beacon.indexing
+uv sync --extra dev
 ```
 
-This creates Beacon's local schema vector files under `data/indices/local_vectors/`.
-To also rebuild the legacy LlamaIndex schema and few-shot indices, set `BEACON_BUILD_LEGACY_LLAMA_INDEX=1`.
+This installs the package in editable form and exposes the console commands declared in `pyproject.toml`.
 
-### 4. Load the data
+## Build The Local Retrieval Artifacts
 
-Run the loader after PostgreSQL is available:
+Run the indexer before asking questions:
 
 ```powershell
-$env:PYTHONPATH="src"
-python -m beacon.load_db
+uv run beacon-index
 ```
 
-### 5. Launch the web UI
+Equivalent module form:
 
 ```powershell
-$env:PYTHONPATH="src"
-python -m beacon.ui
+uv run python -m beacon.indexing
 ```
 
-Open `http://127.0.0.1:7860` in your browser.
+The indexer reads `data/semantic_model/*.json` and `data/processed/*.csv`, enriches the semantic model with compact profiles, builds prompt-ready schema documents, enriches few-shot examples, and writes local vector artifacts under `data/indices/local_vectors/`.
 
-### CLI mode
+## Load The Database
+
+Start PostgreSQL, make sure `.env` points to the target database, then run:
 
 ```powershell
-$env:PYTHONPATH="src"
-python -m beacon.pipeline "How many orders were placed last month?"
+uv run beacon-load-db
 ```
+
+Equivalent module form:
+
+```powershell
+uv run python -m beacon.load_db
+```
+
+The loader creates the local e-commerce tables and inserts the CSV data used by the MVP.
+
+## Run The UI
+
+Launch the Gradio app:
+
+```powershell
+uv run beacon-ui
+```
+
+Equivalent module form:
+
+```powershell
+uv run python -m beacon.ui
+```
+
+Open `http://127.0.0.1:7860` in a browser. The UI sends the question to `beacon.runtime.pipeline.ask_database`, then shows the final answer and SQL.
+
+## Run One CLI Question
+
+Use `beacon-ask` for a direct command-line run:
+
+```powershell
+uv run beacon-ask "For paid Apple Pay orders in the East region during 2022, what are the top 5 product categories by net revenue, discount rate, and profit margin?"
+```
+
+Equivalent module form:
+
+```powershell
+uv run python -m beacon.pipeline "How many orders were placed last month?"
+```
+
+## Run Tests And Evaluation
+
+Run focused tests:
+
+```powershell
+uv run pytest tests -v
+```
+
+Run the 10-question evaluation harness:
+
+```powershell
+uv run python tests/test_cases/run_master_plan_tests.py
+uv run python tests/test_cases/generate_report.py
+```
+
+The latest 10-question outputs are written to `tests/test_results/master_plan_evaluation_results.json` and `tests/test_results/report.html`. The current notes are summarized in `docs/evaluation.md`.
 
 ## Source Layout
 
-The implementation lives under `src/beacon/` as a small set of modules:
+`src/beacon/indexing/` builds semantic profiles, schema docs, few-shot docs, and local schema vectors.
 
-- `src/beacon/pipeline.py` for public question answering entry points
-- `src/beacon/schema_linking.py` for the hybrid schema linking workflow
-- `src/beacon/question_signals.py` for generic question signals
-- `src/beacon/metadata_grounding.py` for value/entity grounding and confidence scoring
-- `src/beacon/schema_graph.py` for join-path expansion
-- `src/beacon/vector_store.py` and `src/beacon/embeddings.py` for local vector retrieval
-- `src/beacon/example_retrieval.py` for structurally ranked few-shot examples
-- `src/beacon/feedback_examples.py` for semi-automatic example candidates
-- `src/beacon/prompting.py` for SQL prompt assembly
-- `src/beacon/retry.py` for SQL, value, and retrieval retry decisions
-- `src/beacon/retrieval.py` for compatibility retrieval entry points used by the pipeline
-- `src/beacon/retrieval_tools.py` for original demo-schema fallback rules and legacy ranking helpers
-- `src/beacon/sql.py` for SQL validation, execution, and result formatting
-- `src/beacon/indexing.py` for the index-building workflow
-- `src/beacon/indexing_tools.py` for semantic profiles and retrieval document construction
-- `src/beacon/profiler.py` for offline semantic profile refresh
-- `src/beacon/config.py` for paths, environment, and database settings
-- `src/beacon/ui.py` for the Gradio interface
-- `src/beacon/load_db.py` for loading processed CSVs into PostgreSQL
+`src/beacon/linking/` turns a question into grounded schema context through question signals, metadata grounding, vector retrieval, schema graph expansion, and example retrieval.
 
-There are no duplicate root-level wrapper scripts; run the package modules with `PYTHONPATH=src` as shown above.
+`src/beacon/runtime/` builds the SQL prompt, calls the model, validates and executes SQL, handles retry repair, and composes the final answer.
 
-`data/semantic_model/` is the main semantic layer. It has one JSON file per table, each with descriptions, relations, three sample rows, and compact column profiles such as min/max/mean, date ranges, null counts, distinct counts, and common categorical values.
+`src/beacon/app/` holds user-facing entrypoints such as the Gradio UI and local PostgreSQL loader.
 
-`data/few_shot_queries.json` stays small and readable. During indexing, Beacon adds lightweight signals such as important columns, metrics, filters, and time grain to help retrieve better examples.
+The package root stays small. `src/beacon/config.py` owns paths, environment, and database settings. `src/beacon/pipeline.py`, `src/beacon/retrieval.py`, `src/beacon/retrieval_tools.py`, `src/beacon/load_db.py`, and `src/beacon/ui.py` are compatibility wrappers for older imports and module commands.
 
-## Database Schema
+## Pipeline Summary
 
-| Table | Description | Key Columns |
-|---|---|---|
-| `customers` | Customer profiles | customer_id, zip, signup_date, acquisition_channel |
-| `orders` | Order records | order_id, customer_id, zip, order_status, device_type |
-| `order_items` | Line items per order | order_item_id, order_id, product_id, quantity, unit_price |
-| `products` | Product catalog | product_id, category, segment, price, cogs |
-| `geography` | Zip-to-location lookup | zip, city, region, district |
-| `sales` | Daily revenue and COGS aggregates | Date, Revenue, COGS |
-| `inventory` | Product inventory snapshots | snapshot_date, product_id, fill_rate, reorder_flag |
+The UI or CLI receives a natural-language analytics question. Beacon extracts generic question signals, grounds user terms against semantic profiles and value aliases, searches the local schema vector index, expands join paths through the schema graph, retrieves structurally similar examples, and assembles a SQL-only prompt.
 
-Key relationships connect customers to orders, orders to line items, line items and inventory to products, and customer/order zip codes to geography.
+The model returns one PostgreSQL query. Beacon strips formatting, validates that the SQL is one read-only statement using selected schema context, executes it inside a read-only transaction, reviews the result or error, and retries with SQL repair, value repair, or retrieval repair when useful.
 
-## How It Works
-
-1. You enter a question in the UI or CLI.
-2. Beacon extracts generic question signals such as metrics, dates, grouping, ranking, and likely entity phrases.
-3. Beacon grounds user terms against semantic profiles, aliases, and sample values.
-4. Beacon searches the local schema vector index and combines those hits with grounded evidence and weak lexical fallback signals.
-5. Beacon expands selected tables through the schema graph so join keys and bridge tables are available.
-6. Beacon ranks few-shot examples by structural overlap with selected tables, metrics, filters, and time grain.
-7. Beacon builds a SQL-only prompt from matched evidence, join paths, schema docs, examples, and the original question.
-8. The LLM returns one read-only PostgreSQL query.
-9. Beacon validates and executes the query in a read-only transaction.
-10. Beacon reviews the result or error and retries with SQL, value, or retrieval repair guidance when useful.
-11. Accepted queries can optionally be saved as future example candidates.
-
-See `docs/pipeline.md` for the full Mermaid diagram and module-level flow. See `docs/evaluation.md` for the latest focused-test and 10-question evaluation notes.
+Accepted attempts produce the final answer. When `BEACON_SAVE_EXAMPLE_CANDIDATES=1`, accepted attempts can also be saved as candidate few-shot examples for manual review.

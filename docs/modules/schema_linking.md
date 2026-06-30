@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`src/beacon/schema_linking.py` turns one natural-language question and one semantic model into linked schema context for SQL generation.
+`src/beacon/linking/schema_linking.py` turns one natural-language question and one semantic model into linked schema context for SQL generation.
 
 ## Inputs
 
@@ -24,21 +24,7 @@ Plain dictionary with question signals, evidence, selected tables, selected colu
 
 ## Diagram
 
-```mermaid
-flowchart TD
-    A["Question"] --> B["question_signals"]
-    A --> C["metadata_grounding"]
-    A --> D["vector retrieval"]
-    A --> E["compatibility fallback"]
-    B --> F["Candidate tables and columns"]
-    C --> F
-    D --> F
-    E --> F
-    F --> G["schema_graph relation paths"]
-    G --> H["Schema docs and coverage"]
-    H --> I["example_retrieval"]
-    I --> J["Linked context"]
-```
+![modules_schema_linking_diagram_1](../diagram/modules_schema_linking_1.png)
 
 ## Failure Behavior
 

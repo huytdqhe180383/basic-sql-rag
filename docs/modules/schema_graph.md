@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`src/beacon/schema_graph.py` turns semantic model relations into a table graph and finds join paths for selected tables.
+`src/beacon/linking/schema_graph.py` turns semantic model relations into a table graph and finds join paths for selected tables.
 
 ## Inputs
 
@@ -24,14 +24,7 @@
 
 ## Diagram
 
-```mermaid
-flowchart TD
-    A["Semantic model relations"] --> B["Build undirected table graph"]
-    C["Selected tables"] --> D["Shortest bounded paths"]
-    B --> D
-    D --> E["Join path strings"]
-    E --> F["Bridge tables and join columns"]
-```
+![modules_schema_graph_diagram_1](../diagram/modules_schema_graph_1.png)
 
 ## Failure Behavior
 

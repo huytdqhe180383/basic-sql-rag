@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`src/beacon/retry.py` decides whether a failed attempt needs SQL-only retry, retrieval repair, or value repair.
+`src/beacon/runtime/retry.py` decides whether a failed attempt needs SQL-only retry, retrieval repair, or value repair.
 
 ## Inputs
 
@@ -24,17 +24,7 @@
 
 ## Diagram
 
-```mermaid
-flowchart TD
-    A["Failed or rejected attempt"] --> B["classify_retry_need"]
-    B --> C{"Repair type"}
-    C -->|SQL retry| D["Keep context and retry SQL"]
-    C -->|Value repair| E["Ask model to reconsider literal spelling"]
-    C -->|Retrieval repair| F["Add known missing table and join paths"]
-    F --> G["Updated message history"]
-    E --> G
-    D --> G
-```
+![modules_retry_diagram_1](../diagram/modules_retry_1.png)
 
 ## Failure Behavior
 

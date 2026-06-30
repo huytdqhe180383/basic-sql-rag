@@ -1,4 +1,4 @@
-from beacon.example_retrieval import rank_examples
+from beacon.linking.example_retrieval import rank_examples
 
 
 def test_rank_examples_prefers_structural_overlap():

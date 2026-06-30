@@ -10,82 +10,62 @@ Main package:
 
 ## Correct Commands
 
-Run commands from the repo root and set `PYTHONPATH` for the current PowerShell session:
+Run commands from the repo root through `uv run`:
 
 ```powershell
 Set-Location -LiteralPath 'E:\AI Thuc Chien\VSF\basic-mvp'
-$env:PYTHONPATH = 'E:\AI Thuc Chien\VSF\basic-mvp\src'
 ```
 
 Build indices:
 
 ```powershell
-python -m beacon.indexing
+uv run python -m beacon.indexing
 ```
 
 Load local PostgreSQL data:
 
 ```powershell
-python -m beacon.load_db
+uv run python -m beacon.load_db
 ```
 
 Run the UI:
 
 ```powershell
-python -m beacon.ui
+uv run python -m beacon.ui
 ```
 
 Run the CLI:
 
 ```powershell
-python -m beacon.pipeline 'How much revenue did we make by category?'
+uv run python -m beacon.pipeline 'How much revenue did we make by category?'
 ```
 
 Run tests:
 
 ```powershell
-pytest tests -v
+uv run pytest tests -v
 ```
 
 ## High-Level Flow
 
-```mermaid
-flowchart TD
-    A["UI or CLI question"] --> B["pipeline.answer_question"]
-    B --> C["pipeline.split_questions"]
-    C --> D["pipeline.answer_section"]
-    D --> E["retrieval.retrieve_context"]
-    E --> F["schema_linking.link_schema"]
-    F --> G["question_signals.extract_question_signals"]
-    F --> H["metadata_grounding.ground_question_metadata"]
-    F --> I["vector_store schema search"]
-    F --> J["schema_graph.relation_paths"]
-    F --> K["example_retrieval.rank_examples"]
-    K --> L["prompting.build_sql_prompt"]
-    L --> M["pipeline_tools.create_section_messages"]
-    M --> N["pipeline.run_sql_attempt"]
-    N --> O["pipeline_tools.request_sql"]
-    O --> P["sql.clean_sql and sql.validate_sql"]
-    P --> Q["sql.run_query"]
-    Q --> R["pipeline_tools.review_attempt"]
-    R --> S{"Satisfied?"}
-    S -->|No| T["retry.classify_retry_need"]
-    T -->|SQL retry| N
-    T -->|Value repair| N
-    T -->|Retrieval repair| U["retry.repair_linked_context"]
-    U --> N
-    S -->|Yes| V["pipeline_tools.compose_final_answer"]
-    V --> W["UI answer + SQL"]
-```
+![pipeline_deep_dive_diagram_1](diagram/pipeline_deep_dive_1.png)
+
+## Source Order
+
+The implementation is split into four layer folders under `src/beacon/`.
+
+![pipeline_deep_dive_diagram_2](diagram/pipeline_deep_dive_2.png)
+
+Root files such as `src/beacon/pipeline.py`, `src/beacon/retrieval.py`, `src/beacon/ui.py`, and `src/beacon/load_db.py` are compatibility entrypoints. They delegate to the layer folders so existing commands keep working.
 
 ## Runtime Entry Points
 
-`src/beacon/ui.py`
+`src/beacon/ui.py` delegates to `src/beacon/app/ui.py`.
 
 - `handle_question(question)` calls `beacon.pipeline.ask_database(question)`.
 - `main()` launches Gradio.
 
-`src/beacon/pipeline.py`
+`src/beacon/pipeline.py` delegates to `src/beacon/runtime/pipeline.py`.
 
 - `answer_question(question)` is the main structured API.
 - `ask_database(question)` returns the UI-friendly `(answer, sql)` tuple.
@@ -122,7 +102,7 @@ Important environment variables:
 
 Entry file:
 
-`src/beacon/indexing.py`
+`src/beacon/indexing/__main__.py`
 
 Indexing always builds Beacon's local schema vector artifact:
 
@@ -133,20 +113,7 @@ Set `BEACON_BUILD_LEGACY_LLAMA_INDEX=1` to also rebuild the older LlamaIndex art
 - LlamaIndex schema docs under `data/indices/schema/`.
 - LlamaIndex few-shot docs under `data/indices/few_shot/`.
 
-```mermaid
-flowchart TD
-    A["semantic_model JSON"] --> B["indexing_tools.enrich_semantic_model_files"]
-    B --> C["build_schema_docs"]
-    B --> D["build_example_docs"]
-    B --> E["schema_index.build_schema_records"]
-    E --> F["embeddings adapter"]
-    F --> G["vector_store.save_vector_index"]
-    B --> J{"BEACON_BUILD_LEGACY_LLAMA_INDEX=1?"}
-    J -->|Yes| C
-    J -->|Yes| D
-    C --> H["schema LlamaIndex"]
-    D --> I["few-shot LlamaIndex"]
-```
+![pipeline_deep_dive_diagram_3](diagram/pipeline_deep_dive_3.png)
 
 The local vector index uses `sentence-transformers` by default. Tests and offline runs can use `BEACON_USE_HASH_EMBEDDINGS=1`.
 
@@ -154,40 +121,26 @@ The local vector index uses `sentence-transformers` by default. Tests and offlin
 
 Entry file:
 
-`src/beacon/retrieval.py`
+`src/beacon/retrieval.py` delegates to `src/beacon/linking/retrieval.py`.
 
 Primary implementation:
 
-`src/beacon/schema_linking.py`
+`src/beacon/linking/schema_linking.py`
 
 Call path:
 
 1. Load semantic model.
 2. Build few-shot example docs.
-3. Call `schema_linking.link_schema(...)`.
-4. Return compatibility fields expected by `pipeline.py`: `question_needs`, `schema_docs`, `example_docs`, `schema_coverage`, and `matched_evidence`.
+3. Call `linking.schema_linking.link_schema(...)`.
+4. Return compatibility fields expected by `runtime.pipeline`: `question_needs`, `schema_docs`, `example_docs`, `schema_coverage`, and `matched_evidence`.
 
-```mermaid
-flowchart TD
-    A["Question"] --> B["question_signals"]
-    A --> C["metadata_grounding"]
-    A --> D["local vector retrieval"]
-    A --> E["filtered extract_question_needs fallback"]
-    B --> F["schema_linking"]
-    C --> F
-    D --> F
-    E --> F
-    F --> G["schema_graph join expansion"]
-    G --> H["schema docs"]
-    H --> I["example_retrieval"]
-    I --> J["linked context"]
-```
+![pipeline_deep_dive_diagram_4](diagram/pipeline_deep_dive_4.png)
 
 The old `retrieval_tools.extract_question_needs()` remains as a compatibility fallback while the hybrid linker is evaluated. It should not receive new database-specific Spider-Snow table rules.
 
 ## Metadata Grounding
 
-`src/beacon/metadata_grounding.py` maps question terms to table/column/value evidence.
+`src/beacon/linking/metadata_grounding.py` maps question terms to table/column/value evidence.
 
 Evidence status:
 
@@ -195,20 +148,11 @@ Evidence status:
 - `ambiguous`: shown to the LLM but not pinned.
 - `candidate`: useful context, not forced.
 
-```mermaid
-flowchart TD
-    A["Question text"] --> B["Normalize"]
-    C["Profiles and aliases"] --> D["Candidates"]
-    B --> D
-    D --> E["Score confidence"]
-    E --> F{"Pinned?"}
-    F -->|Yes| G["Force table/column"]
-    F -->|No| H["Prompt-only evidence"]
-```
+![pipeline_deep_dive_diagram_5](diagram/pipeline_deep_dive_5.png)
 
 ## SQL Attempt Loop
 
-`pipeline.answer_section()` retrieves context once, then loops through up to `MAX_SQL_ATTEMPTS = 3`.
+`runtime.pipeline.answer_section()` retrieves context once, then loops through up to `MAX_SQL_ATTEMPTS = 3`.
 
 One attempt:
 
@@ -227,7 +171,7 @@ Retry repair:
 
 ## SQL Safety
 
-`src/beacon/sql.py` still validates with readable regex-based checks:
+`src/beacon/runtime/sql.py` still validates with readable regex-based checks:
 
 - only `SELECT` or `WITH`
 - single statement

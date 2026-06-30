@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`src/beacon/prompting.py` owns the SQL-generation prompt layout.
+`src/beacon/runtime/prompting.py` owns the SQL-generation prompt layout.
 
 ## Inputs
 
@@ -20,15 +20,7 @@ A plain-text prompt ending with `SQL:`.
 
 ## Diagram
 
-```mermaid
-flowchart TD
-    A["Matched evidence"] --> E["Prompt"]
-    B["Join paths"] --> E
-    C["Schema docs"] --> E
-    D["Ranked examples"] --> E
-    F["Original question"] --> E
-    E --> G["SQL-only LLM request"]
-```
+![modules_prompting_diagram_1](../diagram/modules_prompting_1.png)
 
 ## Failure Behavior
 

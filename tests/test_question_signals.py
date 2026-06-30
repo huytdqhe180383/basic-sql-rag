@@ -1,4 +1,4 @@
-from beacon.question_signals import extract_question_signals
+from beacon.linking.question_signals import extract_question_signals
 
 
 def test_extract_question_signals_detects_generic_intents():

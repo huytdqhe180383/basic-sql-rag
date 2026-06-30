@@ -1,4 +1,4 @@
-from beacon.schema_graph import build_schema_graph, relation_paths
+from beacon.linking.schema_graph import build_schema_graph, relation_paths
 
 
 SEMANTIC_MODEL = [

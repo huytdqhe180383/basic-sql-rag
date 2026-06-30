@@ -1,6 +1,0 @@
-google-cloud-bigquery
-openai
-pandas
-python-dotenv
-snowflake-connector-python
-tqdm

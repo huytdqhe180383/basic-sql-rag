@@ -9,7 +9,8 @@ Use it when you are setting up the repo on a new PC, or when a coding agent need
 These inputs are already checked in:
 
 - `src/` application code
-- `requirements.txt` runtime Python dependencies
+- `pyproject.toml` project metadata and runtime Python dependencies
+- `requirements.txt` compatibility dependency export for shells that cannot use `uv`
 - `data/processed/*.csv` source CSV files for local loading
 - `data/semantic_model/*.json` semantic metadata
 - `data/few_shot_queries.json` few-shot examples
@@ -25,22 +26,27 @@ Install these outside the repo:
    Recommended: Python `3.11` or `3.12` 64-bit
 3. `PostgreSQL`
    Any recent local version is fine. The app expects a reachable database on the values in `.env`.
-4. Python dev/test tooling that is not in `requirements.txt`
-   Install `pytest` for local testing.
+4. `uv`
+   Beacon uses `uv` to create the virtual environment, install the editable package, and run commands.
+
+   Windows install options:
+
+   ```powershell
+   winget install --id astral-sh.uv -e
+   ```
+
+   Or follow the current installer command from the official `uv` documentation.
 
 ## Windows PowerShell Setup
 
 From the repo root:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-pip install pytest
+uv sync --extra dev
 ```
 
-`requirements.txt` includes the runtime embedding stack used by the local schema vector index, including `numpy` and `sentence-transformers`.
+`uv sync --extra dev` creates `.venv`, installs Beacon as an editable `src/` package, and installs `pytest`.
+`pyproject.toml` includes the runtime embedding stack used by the local schema vector index, including `numpy` and `sentence-transformers`.
 
 ## Environment File
 
@@ -93,94 +99,61 @@ The app uses these local tables:
 
 ## First-Time Repo Commands
 
-Run these from the repo root after the virtual environment is active.
-
-Set the import path for the current PowerShell session:
-
-```powershell
-$env:PYTHONPATH = "src"
-```
+Run these from the repo root.
 
 Build the retrieval indices:
 
 ```powershell
-python -m beacon.indexing
+uv run python -m beacon.indexing
 ```
 
 If your machine cannot download the configured sentence-transformer model yet, build with deterministic local hash embeddings:
 
 ```powershell
 $env:BEACON_USE_HASH_EMBEDDINGS = "1"
-python -m beacon.indexing
+uv run python -m beacon.indexing
 ```
 
 Load the local CSV data into PostgreSQL:
 
 ```powershell
-python -m beacon.load_db
+uv run python -m beacon.load_db
 ```
 
 Launch the UI:
 
 ```powershell
-python -m beacon.ui
+uv run python -m beacon.ui
 ```
 
 Run the CLI:
 
 ```powershell
-python -m beacon.pipeline "How many orders were placed last month?"
+uv run python -m beacon.pipeline "How many orders were placed last month?"
 ```
 
 Run the test suite:
 
 ```powershell
-pytest tests -v
+uv run pytest tests -v
 ```
-
-## Optional Spider2-Snow Benchmark Setup
-
-Only do this if you plan to run the benchmark helpers under `benchmarks/spider2_snow/`.
-
-Create a separate benchmark virtual environment:
-
-```powershell
-python -m venv benchmarks\.venv_spider2_snow
-benchmarks\.venv_spider2_snow\Scripts\python.exe -m pip install --upgrade pip
-benchmarks\.venv_spider2_snow\Scripts\python.exe -m pip install -r benchmarks\spider2_snow\requirements-spider2-snow.txt
-```
-
-That benchmark environment installs additional tools such as:
-
-- `google-cloud-bigquery`
-- `pandas`
-- `snowflake-connector-python`
-- `tqdm`
-
-The Snow benchmark also needs Snowflake credentials that are not stored in this repo.
 
 ## Sanity Checklist
 
 You are set up correctly when all of these are true:
 
-- the virtual environment is active
-- `pip install -r requirements.txt` succeeded
-- `pip install pytest` succeeded
+- `uv sync --extra dev` succeeded
 - `.env` exists
 - PostgreSQL is running
-- `python -m beacon.indexing` creates `data/indices/local_vectors/`
-- `python -m beacon.load_db` prints `Schema created.` and loads the CSV-backed tables
-- `pytest tests -v` starts without `ModuleNotFoundError: beacon`
+- `uv run python -m beacon.indexing` creates `data/indices/local_vectors/`
+- `uv run python -m beacon.load_db` prints `Schema created.` and loads the CSV-backed tables
+- `uv run pytest tests -v` starts without `ModuleNotFoundError: beacon`
 
 ## Common Problems
 
 `ModuleNotFoundError: beacon`
 
-- Set `PYTHONPATH` for the current shell:
-
-```powershell
-$env:PYTHONPATH = "src"
-```
+- Run commands through `uv run`, or rerun `uv sync --extra dev` from the repo root.
 
 `OPENAI_API_KEY is not set`
 
@@ -200,10 +173,19 @@ $env:PYTHONPATH = "src"
 
 `pytest` not found
 
-- Install it separately:
+- Install the dev extra:
 
 ```powershell
-pip install pytest
+uv sync --extra dev
+```
+
+`uv` cache access denied
+
+- Point the cache at a writable folder for the current shell:
+
+```powershell
+$env:UV_CACHE_DIR = ".uv-cache"
+uv sync --extra dev
 ```
 
 ## For Coding Agents
@@ -216,8 +198,8 @@ Before changing dependencies or startup commands:
 
 Assume these repo-specific facts unless the user says otherwise:
 
-- this repo is run from source with `PYTHONPATH=src`
-- there is no packaged editable install flow yet
-- `requirements.txt` is runtime-focused, not full dev tooling
+- this repo is run through `uv run`, with Beacon installed from the `src/` layout
+- `pyproject.toml` is the source of truth for dependencies and dev extras
+- `requirements.txt` exists only as a compatibility export
 - the local vector index is part of the normal indexing command
 - PostgreSQL and the OpenAI-compatible API are external prerequisites

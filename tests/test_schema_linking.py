@@ -1,7 +1,7 @@
-from beacon.embeddings import HashEmbeddingAdapter
-from beacon.schema_index import build_schema_records
-from beacon.schema_linking import link_schema
-from beacon.vector_store import save_vector_index
+from beacon.linking.embeddings import HashEmbeddingAdapter
+from beacon.linking.schema_index import build_schema_records
+from beacon.linking.schema_linking import link_schema
+from beacon.linking.vector_store import save_vector_index
 
 
 SEMANTIC_MODEL = [

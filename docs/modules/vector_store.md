@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`src/beacon/vector_store.py` provides a small local NumPy-backed vector store for schema retrieval.
+`src/beacon/linking/vector_store.py` provides a small local NumPy-backed vector store for schema retrieval.
 
 ## Inputs
 
@@ -23,17 +23,7 @@ Search results with the original record and cosine score.
 
 ## Diagram
 
-```mermaid
-flowchart TD
-    A["Schema records"] --> B["Embedding adapter"]
-    B --> C["schema_vectors.npy"]
-    A --> D["schema_records.json"]
-    C --> E["Loaded vector index"]
-    D --> E
-    F["Question embedding"] --> G["Cosine search"]
-    E --> G
-    G --> H["Top schema hits"]
-```
+![modules_vector_store_diagram_1](../diagram/modules_vector_store_1.png)
 
 ## Failure Behavior
 

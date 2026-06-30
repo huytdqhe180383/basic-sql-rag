@@ -1,0 +1,464 @@
+[
+  {
+    "id": 1,
+    "en_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "How many order were refunded in 2017",
+          "status": "completed",
+          "sql": "SELECT COUNT(*) \nFROM orders \nWHERE order_status = 'returned' \nAND DATE_PART('year', order_date) = 2017",
+          "answer": "There were 4,247 orders refunded in 2017.",
+          "error": null,
+          "attempt_count": 2,
+          "attempts": [
+            {
+              "sql": "SELECT COUNT(*) \nFROM orders \nWHERE order_status = 'returned' \nAND EXTRACT(YEAR FROM order_date) = 2017",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The SQL query is referencing 'order_date' which is not available in the provided schema context.",
+              "satisfied": false
+            },
+            {
+              "sql": "SELECT COUNT(*) \nFROM orders \nWHERE order_status = 'returned' \nAND DATE_PART('year', order_date) = 2017",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query successfully counted the number of orders with status 'returned' in the year 2017, which directly answers the question.",
+              "satisfied": true
+            }
+          ]
+        },
+        {
+          "title": "which city has the most canceled order",
+          "status": "completed",
+          "sql": "SELECT g.city, COUNT(o.order_id) AS canceled_orders FROM orders o JOIN geography g ON o.zip = g.zip WHERE o.order_status = 'cancelled' GROUP BY g.city ORDER BY canceled_orders DESC LIMIT 1",
+          "answer": "The city with the most canceled orders is Son Tay, with 2,075 canceled orders.",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "SELECT g.city, COUNT(o.order_id) AS canceled_orders FROM orders o JOIN geography g ON o.zip = g.zip WHERE o.order_status = 'cancelled' GROUP BY g.city ORDER BY canceled_orders DESC LIMIT 1",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query correctly identifies the city with the most canceled orders by joining the orders table with the geography table, filtering for cancelled orders, grouping by city, and ordering by count descending.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    },
+    "vn_ans": {
+      "status": "failed",
+      "sections": [
+        {
+          "title": "Có bao nhiêu đơn hàng đã được hoàn tiền trong năm 2017 và thành phố nào có nhiều đơn bị hủy nhất",
+          "status": "failed",
+          "sql": "WITH refunded_orders AS (\n    SELECT COUNT(*) AS total_refunded\n    FROM orders\n    WHERE order_status = 'returned' \n    AND EXTRACT(YEAR FROM order_date) = 2017\n),\ncancelled_by_city AS (\n    SELECT g.city, COUNT(*) AS cancelled_count\n    FROM orders o\n    JOIN geography g ON o.zip = g.zip\n    WHERE o.order_status = 'cancelled'\n    AND EXTRACT(YEAR FROM o.order_date) = 2017\n    GROUP BY g.city\n    ORDER BY cancelled_count DESC\n    LIMIT 1\n)\nSELECT r.total_refunded, c.city AS most_cancelled_city\nFROM refunded_orders r\nCROSS JOIN cancelled_by_city c",
+          "answer": "I apologize, but I encountered an issue while trying to execute the query. The system is having trouble recognizing the 'order_date' column in the orders table, even though it exists according to the schema. This appears to be a technical limitation with how the query is being processed.\n\nTo answer your question, I would need to:\n1. Count orders with status 'returned' from the year 2017\n2. Count cancelled orders by city for 2017 and find the city with the highest count\n\nUnfortunately, I cannot provide the exact numbers due to this technical constraint. You might want to try running this query directly in your database environment where the schema is properly recognized.",
+          "error": "The query still references 'order_date' incorrectly. According to the schema, the column exists in the orders table, but the error suggests it's being treated as outside the context. This might be due to a validation issue with how the column is referenced in the EXTRACT function.",
+          "attempt_count": 3,
+          "attempts": [
+            {
+              "sql": "SELECT COUNT(*) AS refunded_orders FROM orders WHERE order_status = 'returned' AND EXTRACT(YEAR FROM order_date) = 2017",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query only answers part of the question. It counts refunded orders in 2017 but does not identify the city with the most cancelled orders.",
+              "satisfied": false
+            },
+            {
+              "sql": "WITH refunded_orders AS (\n    SELECT COUNT(*) AS total_refunded\n    FROM orders\n    WHERE order_status = 'returned' \n    AND EXTRACT(YEAR FROM order_date) = 2017\n),\ncancelled_by_city AS (\n    SELECT g.city, COUNT(*) AS cancelled_count\n    FROM orders o\n    JOIN geography g ON o.zip = g.zip\n    WHERE o.order_status = 'cancelled'\n    AND EXTRACT(YEAR FROM o.order_date) = 2017\n    GROUP BY g.city\n    ORDER BY cancelled_count DESC\n    LIMIT 1\n)\nSELECT r.total_refunded, c.city AS most_cancelled_city\nFROM refunded_orders r\nCROSS JOIN cancelled_by_city c",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query references 'order_date' column which doesn't exist in the orders table according to the schema. The correct column is 'order_date' but it seems there's an issue with how it's being referenced.",
+              "satisfied": false
+            },
+            {
+              "sql": "WITH refunded_orders AS (\n    SELECT COUNT(*) AS total_refunded\n    FROM orders\n    WHERE order_status = 'returned' \n    AND EXTRACT(YEAR FROM order_date) = 2017\n),\ncancelled_by_city AS (\n    SELECT g.city, COUNT(*) AS cancelled_count\n    FROM orders o\n    JOIN geography g ON o.zip = g.zip\n    WHERE o.order_status = 'cancelled'\n    AND EXTRACT(YEAR FROM o.order_date) = 2017\n    GROUP BY g.city\n    ORDER BY cancelled_count DESC\n    LIMIT 1\n)\nSELECT r.total_refunded, c.city AS most_cancelled_city\nFROM refunded_orders r\nCROSS JOIN cancelled_by_city c",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query still references 'order_date' incorrectly. According to the schema, the column exists in the orders table, but the error suggests it's being treated as outside the context. This might be due to a validation issue with how the column is referenced in the EXTRACT function.",
+              "satisfied": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "en_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "Tell me the 3 most profitable products (total revenue minus cogs) ever, but exclude items currently flagged as overstock",
+          "status": "completed",
+          "sql": "WITH latest_inventory AS (\n    SELECT DISTINCT ON (product_id) product_id, overstock_flag\n    FROM inventory\n    ORDER BY product_id, snapshot_date DESC\n)\nSELECT \n    p.product_name,\n    SUM((oi.unit_price * oi.quantity) - (p.cogs * oi.quantity) - oi.discount_amount) AS total_profit\nFROM order_items oi\nJOIN products p ON oi.product_id = p.product_id\nLEFT JOIN latest_inventory li ON p.product_id = li.product_id\nWHERE COALESCE(li.overstock_flag, FALSE) = FALSE\nGROUP BY p.product_name\nORDER BY total_profit DESC\nLIMIT 3",
+          "answer": "Based on the analysis of all orders and current inventory status, here are the 3 most profitable products (after excluding items currently flagged as overstock):\n\n1. **LotusWear UE-16** - Total Profit: $1,263,884.31\n2. **PhoenixWear UM-15** - Total Profit: $1,041,729.04\n3. **DragonWear UM-01** - Total Profit: $1,024,986.13\n\nThese products have generated the highest total profit (calculated as revenue minus cost of goods sold minus discounts) while currently maintaining healthy inventory levels (not overstocked).",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "WITH latest_inventory AS (\n    SELECT DISTINCT ON (product_id) product_id, overstock_flag\n    FROM inventory\n    ORDER BY product_id, snapshot_date DESC\n)\nSELECT \n    p.product_name,\n    SUM((oi.unit_price * oi.quantity) - (p.cogs * oi.quantity) - oi.discount_amount) AS total_profit\nFROM order_items oi\nJOIN products p ON oi.product_id = p.product_id\nLEFT JOIN latest_inventory li ON p.product_id = li.product_id\nWHERE COALESCE(li.overstock_flag, FALSE) = FALSE\nGROUP BY p.product_name\nORDER BY total_profit DESC\nLIMIT 3",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query correctly calculates total profit as (revenue - cogs - discounts), excludes products currently flagged as overstock, and returns the top 3 most profitable products as requested.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    },
+    "vn_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "Cho tôi biết 3 sản phẩm có lợi nhuận cao nhất (tổng doanh thu trừ đi giá vốn) từ trước đến nay, nhưng loại trừ những mặt hàng hiện đang bị đánh dấu là tồn kho quá mức (overstock)",
+          "status": "completed",
+          "sql": "WITH latest_inventory AS (\n    SELECT DISTINCT ON (product_id) \n        product_id, \n        overstock_flag \n    FROM inventory \n    ORDER BY product_id, snapshot_date DESC\n)\nSELECT \n    p.product_name,\n    SUM((oi.quantity * oi.unit_price - oi.discount_amount) - (p.cogs * oi.quantity)) AS total_profit\nFROM order_items oi\nJOIN products p ON oi.product_id = p.product_id\nLEFT JOIN latest_inventory li ON p.product_id = li.product_id\nWHERE COALESCE(li.overstock_flag, FALSE) = FALSE\nGROUP BY p.product_name\nORDER BY total_profit DESC\nLIMIT 3",
+          "answer": "Dựa trên dữ liệu, đây là 3 sản phẩm có lợi nhuận cao nhất từ trước đến nay (tính bằng tổng doanh thu trừ giá vốn), sau khi loại bỏ các mặt hàng đang bị đánh dấu tồn kho quá mức:\n\n1. **LotusWear UE-16** - Lợi nhuận: 1,263,884.31\n2. **PhoenixWear UM-15** - Lợi nhuận: 1,041,729.04\n3. **DragonWear UM-01** - Lợi nhuận: 1,024,986.13",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "WITH latest_inventory AS (\n    SELECT DISTINCT ON (product_id) \n        product_id, \n        overstock_flag \n    FROM inventory \n    ORDER BY product_id, snapshot_date DESC\n)\nSELECT \n    p.product_name,\n    SUM((oi.quantity * oi.unit_price - oi.discount_amount) - (p.cogs * oi.quantity)) AS total_profit\nFROM order_items oi\nJOIN products p ON oi.product_id = p.product_id\nLEFT JOIN latest_inventory li ON p.product_id = li.product_id\nWHERE COALESCE(li.overstock_flag, FALSE) = FALSE\nGROUP BY p.product_name\nORDER BY total_profit DESC\nLIMIT 3",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query correctly identifies the top 3 most profitable products (by total profit = revenue minus COGS) while excluding those currently marked as overstocked. It uses the latest inventory status per product and properly calculates profit at the product level.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "en_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "Did we get more new folks from social media or organic search in the first half of 2020? And what was the total COGS for that period?",
+          "status": "completed",
+          "sql": "SELECT \n    COUNT(CASE WHEN acquisition_channel = 'social_media' THEN 1 END) AS social_media_customers,\n    COUNT(CASE WHEN acquisition_channel = 'organic_search' THEN 1 END) AS organic_search_customers,\n    (SELECT SUM(cogs) FROM sales WHERE date >= DATE '2020-01-01' AND date < DATE '2020-07-01') AS total_cogs\nFROM customers\nWHERE signup_date >= DATE '2020-01-01' AND signup_date < DATE '2020-07-01'",
+          "answer": "In the first half of 2020, we acquired more new customers through organic search (2,500 customers) compared to social media (1,691 customers). The total cost of goods sold (COGS) for this period was $499,076,942.58.",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "SELECT \n    COUNT(CASE WHEN acquisition_channel = 'social_media' THEN 1 END) AS social_media_customers,\n    COUNT(CASE WHEN acquisition_channel = 'organic_search' THEN 1 END) AS organic_search_customers,\n    (SELECT SUM(cogs) FROM sales WHERE date >= DATE '2020-01-01' AND date < DATE '2020-07-01') AS total_cogs\nFROM customers\nWHERE signup_date >= DATE '2020-01-01' AND signup_date < DATE '2020-07-01'",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query correctly identifies the number of new customers from social media and organic search in the first half of 2020, and also provides the total COGS for that period. The results show that organic search brought in more new customers (2500) than social media (1691) during this time, and the total COGS was 499076942.58.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    },
+    "vn_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "Chúng ta có thêm nhiều người mới từ mạng xã hội (social media) hay tìm kiếm tự nhiên (organic search) hơn trong nửa đầu năm 2020? Và tổng giá vốn hàng bán (COGS) trong khoảng thời gian đó là bao nhiêu",
+          "status": "completed",
+          "sql": "SELECT \n    COUNT(CASE WHEN acquisition_channel = 'social_media' THEN 1 END) AS social_media_customers,\n    COUNT(CASE WHEN acquisition_channel = 'organic_search' THEN 1 END) AS organic_search_customers,\n    SUM(s.cogs) AS total_cogs\nFROM customers c\nJOIN orders o ON c.customer_id = o.customer_id\nJOIN sales s ON o.order_date = s.date\nWHERE c.signup_date >= DATE '2020-01-01' AND c.signup_date < DATE '2020-07-01'",
+          "answer": "Trong nửa đầu năm 2020, chúng ta có thêm nhiều người mới từ tìm kiếm tự nhiên (organic search) hơn so với mạng xã hội (social media). Cụ thể, có 13.504 khách hàng mới từ tìm kiếm tự nhiên và 9.122 khách hàng mới từ mạng xã hội.\n\nTổng giá vốn hàng bán (COGS) trong khoảng thời gian này là 225.753.740.977,84.",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "SELECT \n    COUNT(CASE WHEN acquisition_channel = 'social_media' THEN 1 END) AS social_media_customers,\n    COUNT(CASE WHEN acquisition_channel = 'organic_search' THEN 1 END) AS organic_search_customers,\n    SUM(s.cogs) AS total_cogs\nFROM customers c\nJOIN orders o ON c.customer_id = o.customer_id\nJOIN sales s ON o.order_date = s.date\nWHERE c.signup_date >= DATE '2020-01-01' AND c.signup_date < DATE '2020-07-01'",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query correctly identifies the number of new customers acquired through social media versus organic search in the first half of 2020, and also calculates the total COGS for that period. The results show that organic search brought in more new customers (13,504) than social media (9,122) during this time, and the total COGS was 225,753,740,977.84.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": 4,
+    "en_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "I need to know the region that brought in the most revenue via apple pay in 2022. Also, what was the average days of supply for all products at the end of 2022",
+          "status": "completed",
+          "sql": "WITH apple_pay_revenue AS (\n    SELECT \n        g.region,\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue\n    FROM order_items oi\n    JOIN orders o ON oi.order_id = o.order_id\n    JOIN geography g ON o.zip = g.zip\n    WHERE o.payment_method = 'apple_pay'\n    AND DATE_PART('year', o.order_date) = 2022\n    GROUP BY g.region\n),\nsupply_metrics AS (\n    SELECT \n        AVG(days_of_supply) AS avg_days_of_supply\n    FROM inventory\n    WHERE snapshot_date = '2022-12-31'\n)\nSELECT \n    apr.region,\n    apr.revenue,\n    sm.avg_days_of_supply\nFROM apple_pay_revenue apr\nCROSS JOIN supply_metrics sm\nORDER BY apr.revenue DESC\nLIMIT 1",
+          "answer": "Based on the analysis of the data:\n\n1. The region that brought in the most revenue via Apple Pay in 2022 was **East** with a total revenue of **$53,159,049.41**.\n\n2. The average days of supply for all products at the end of 2022 was **1,869.23 days**.\n\nThese figures were calculated by analyzing Apple Pay transactions in 2022 by region and examining the inventory snapshot from December 31, 2022.",
+          "error": null,
+          "attempt_count": 3,
+          "attempts": [
+            {
+              "sql": "SELECT \n    g.region,\n    SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue,\n    AVG(i.days_of_supply) AS avg_days_of_supply\nFROM order_items oi\nJOIN orders o ON oi.order_id = o.order_id\nJOIN geography g ON o.zip = g.zip\nJOIN inventory i ON oi.product_id = i.product_id\nWHERE o.payment_method = 'apple_pay'\nAND EXTRACT(YEAR FROM o.order_date) = 2022\nAND i.snapshot_date = '2022-12-31'\nGROUP BY g.region\nORDER BY revenue DESC\nLIMIT 1",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query incorrectly joins inventory with order_items on product_id without considering that we need separate calculations for revenue by region and average days of supply. The current approach mixes these two unrelated metrics in a single query which leads to incorrect results.",
+              "satisfied": false
+            },
+            {
+              "sql": "WITH apple_pay_revenue AS (\n    SELECT \n        g.region,\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue\n    FROM order_items oi\n    JOIN orders o ON oi.order_id = o.order_id\n    JOIN geography g ON o.zip = g.zip\n    WHERE o.payment_method = 'apple_pay'\n    AND EXTRACT(YEAR FROM o.order_date) = 2022\n    GROUP BY g.region\n),\nsupply_metrics AS (\n    SELECT \n        AVG(days_of_supply) AS avg_days_of_supply\n    FROM inventory\n    WHERE snapshot_date = '2022-12-31'\n)\nSELECT \n    apr.region,\n    apr.revenue,\n    sm.avg_days_of_supply\nFROM apple_pay_revenue apr\nCROSS JOIN supply_metrics sm\nORDER BY apr.revenue DESC\nLIMIT 1",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query still references 'order_date' which is not directly accessible in the WHERE clause of the CTE because it's not properly qualified with the table alias. The EXTRACT function is trying to use o.order_date but the error suggests the reference is outside the allowed context.",
+              "satisfied": false
+            },
+            {
+              "sql": "WITH apple_pay_revenue AS (\n    SELECT \n        g.region,\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue\n    FROM order_items oi\n    JOIN orders o ON oi.order_id = o.order_id\n    JOIN geography g ON o.zip = g.zip\n    WHERE o.payment_method = 'apple_pay'\n    AND DATE_PART('year', o.order_date) = 2022\n    GROUP BY g.region\n),\nsupply_metrics AS (\n    SELECT \n        AVG(days_of_supply) AS avg_days_of_supply\n    FROM inventory\n    WHERE snapshot_date = '2022-12-31'\n)\nSELECT \n    apr.region,\n    apr.revenue,\n    sm.avg_days_of_supply\nFROM apple_pay_revenue apr\nCROSS JOIN supply_metrics sm\nORDER BY apr.revenue DESC\nLIMIT 1",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query successfully returns both pieces of requested information: the region that brought in the most revenue via Apple Pay in 2022 (east with $53,159,049.41) and the average days of supply for all products at the end of 2022 (1869.23 days). The query correctly uses CTEs to separate the two calculations and then combines them.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    },
+    "vn_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "Tôi cần biết khu vực (region) mang lại doanh thu cao nhất qua apple pay trong năm 2022. Ngoài ra, số ngày cung cấp trung bình (average days of supply) cho tất cả các sản phẩm vào cuối năm 2022 là bao nhiêu",
+          "status": "completed",
+          "sql": "WITH apple_pay_revenue AS (\n    SELECT \n        g.region,\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN geography g ON o.zip = g.zip\n    WHERE o.payment_method = 'apple_pay' \n    AND DATE_PART('year', o.order_date) = 2022\n    GROUP BY g.region\n    ORDER BY revenue DESC\n    LIMIT 1\n),\navg_supply AS (\n    SELECT \n        AVG(days_of_supply) AS avg_days_of_supply\n    FROM inventory\n    WHERE snapshot_date = '2022-12-31'\n)\nSELECT \n    apr.region,\n    apr.revenue,\n    avgs.avg_days_of_supply\nFROM apple_pay_revenue apr\nCROSS JOIN avg_supply avgs",
+          "answer": "region | revenue     | avg_days_of_supply   \n-------+-------------+----------------------\neast   | 53159049.41 | 1869.2294811320754717\n\n(1 row)",
+          "error": "Error code: 503 - {'error': {'code': 'model_not_found', 'message': 'No available channel for model qwen3-coder-480b-a35b-instruct under group cheap (distributor) (request id: 20260630102304920565728268d9d6zHvZbad9)', 'type': 'proxy_api_error'}}",
+          "attempt_count": 3,
+          "attempts": [
+            {
+              "sql": "SELECT \n    g.region,\n    SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue,\n    AVG(i.days_of_supply) AS avg_days_of_supply\nFROM orders o\nJOIN order_items oi ON o.order_id = oi.order_id\nJOIN geography g ON o.zip = g.zip\nLEFT JOIN inventory i ON i.snapshot_date = '2022-12-31'\nWHERE o.payment_method = 'apple_pay' \nAND EXTRACT(YEAR FROM o.order_date) = 2022\nGROUP BY g.region\nORDER BY revenue DESC\nLIMIT 1",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query has two main issues: 1) It's missing the join between inventory and products/order_items to get the correct days_of_supply for the products, and 2) The AVG(i.days_of_supply) is calculated per region but should be a global average for all products at the end of 2022. Also, the WHERE clause incorrectly references order_date directly instead of using the proper table alias.",
+              "satisfied": false
+            },
+            {
+              "sql": "WITH apple_pay_revenue AS (\n    SELECT \n        g.region,\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN geography g ON o.zip = g.zip\n    WHERE o.payment_method = 'apple_pay' \n    AND EXTRACT(YEAR FROM o.order_date) = 2022\n    GROUP BY g.region\n    ORDER BY revenue DESC\n    LIMIT 1\n),\navg_supply AS (\n    SELECT \n        AVG(days_of_supply) AS avg_days_of_supply\n    FROM inventory\n    WHERE snapshot_date = '2022-12-31'\n)\nSELECT \n    apr.region,\n    apr.revenue,\n    avgs.avg_days_of_supply\nFROM apple_pay_revenue apr\nCROSS JOIN avg_supply avgs",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query still references 'order_date' which is not properly qualified with its table alias in the WHERE clause. Additionally, while the approach of using CTEs is good, we need to ensure all column references are properly qualified with their table aliases.",
+              "satisfied": false
+            },
+            {
+              "sql": "WITH apple_pay_revenue AS (\n    SELECT \n        g.region,\n        SUM(oi.quantity * oi.unit_price - oi.discount_amount) AS revenue\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN geography g ON o.zip = g.zip\n    WHERE o.payment_method = 'apple_pay' \n    AND DATE_PART('year', o.order_date) = 2022\n    GROUP BY g.region\n    ORDER BY revenue DESC\n    LIMIT 1\n),\navg_supply AS (\n    SELECT \n        AVG(days_of_supply) AS avg_days_of_supply\n    FROM inventory\n    WHERE snapshot_date = '2022-12-31'\n)\nSELECT \n    apr.region,\n    apr.revenue,\n    avgs.avg_days_of_supply\nFROM apple_pay_revenue apr\nCROSS JOIN avg_supply avgs",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query successfully answers both parts of the question: 1) It identifies the 'east' region as having the highest revenue through Apple Pay in 2022 with revenue of 53,159,049.41, and 2) It calculates the average days of supply for all products at the end of 2022 as 1869.23 days. The query correctly uses CTEs to separate these two calculations and joins them with a CROSS JOIN since the second part is a single aggregate value.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": 5,
+    "en_ans": {
+      "error": "Error code: 503 - {'error': {'code': 'model_not_found', 'message': 'No available channel for model qwen3-coder-480b-a35b-instruct under group cheap (distributor) (request id: 202606301023144673007368268d9d6vewEjroQ)', 'type': 'proxy_api_error'}}"
+    },
+    "vn_ans": {
+      "error": "Error code: 503 - {'error': {'code': 'model_not_found', 'message': 'No available channel for model qwen3-coder-480b-a35b-instruct under group cheap (distributor) (request id: 202606301023237490382578268d9d664xeWphb)', 'type': 'proxy_api_error'}}"
+    }
+  },
+  {
+    "id": 6,
+    "en_ans": {
+      "error": "Error code: 503 - {'error': {'code': 'model_not_found', 'message': 'No available channel for model qwen3-coder-480b-a35b-instruct under group cheap (distributor) (request id: 202606301023329723409878268d9d6WHal85gy)', 'type': 'proxy_api_error'}}"
+    },
+    "vn_ans": {
+      "error": "Error code: 503 - {'error': {'code': 'model_not_found', 'message': 'No available channel for model qwen3-coder-480b-a35b-instruct under group cheap (distributor) (request id: 202606301023432171677108268d9d6vAvFw6eC)', 'type': 'proxy_api_error'}}"
+    }
+  },
+  {
+    "id": 7,
+    "en_ans": {
+      "error": "Error code: 503 - {'error': {'code': 'model_not_found', 'message': 'No available channel for model qwen3-coder-480b-a35b-instruct under group cheap (distributor) (request id: 202606301023528726823398268d9d6jGr7ss6A)', 'type': 'proxy_api_error'}}"
+    },
+    "vn_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "Kênh thu hút (acquisition channel) nào mang lại nhiều người mua hàng bằng Apple Pay nhất, và độ tuổi phổ biến nhất của những người mua cụ thể đó là gì",
+          "status": "completed",
+          "sql": "SELECT \n    c.acquisition_channel,\n    c.age_group,\n    COUNT(*) AS apple_pay_users_count\nFROM \n    orders o\nJOIN \n    customers c ON o.customer_id = c.customer_id\nWHERE \n    o.payment_method = 'apple_pay'\nGROUP BY \n    c.acquisition_channel, \n    c.age_group\nORDER BY \n    apple_pay_users_count DESC\nLIMIT 1",
+          "answer": "Kênh thu hút mang lại nhiều người mua hàng bằng Apple Pay nhất là **organic_search** (tìm kiếm tự nhiên), và độ tuổi phổ biến nhất của những người mua này là **25-34** tuổi. Có tổng cộng **5,910** khách hàng thuộc nhóm này.",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "SELECT \n    c.acquisition_channel,\n    c.age_group,\n    COUNT(*) AS apple_pay_users_count\nFROM \n    orders o\nJOIN \n    customers c ON o.customer_id = c.customer_id\nWHERE \n    o.payment_method = 'apple_pay'\nGROUP BY \n    c.acquisition_channel, \n    c.age_group\nORDER BY \n    apple_pay_users_count DESC\nLIMIT 1",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query correctly identifies the acquisition channel (organic_search) that brought the most Apple Pay buyers and their most common age group (25-34). The result shows 5910 users matching this criteria.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": 8,
+    "en_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "Find the district with the highest refund rate (returned orders / total orders). How much revenue did we lose to those returns?",
+          "status": "completed",
+          "sql": "WITH district_stats AS (\n    SELECT \n        g.district,\n        COUNT(CASE WHEN o.order_status = 'returned' THEN 1 END) AS returned_orders,\n        COUNT(*) AS total_orders,\n        SUM(CASE WHEN o.order_status = 'returned' THEN oi.quantity * oi.unit_price - oi.discount_amount ELSE 0 END) AS revenue_lost\n    FROM orders o\n    JOIN geography g ON o.zip = g.zip\n    JOIN order_items oi ON o.order_id = oi.order_id\n    GROUP BY g.district\n),\nrefund_rates AS (\n    SELECT \n        district,\n        returned_orders::FLOAT / total_orders AS refund_rate,\n        revenue_lost\n    FROM district_stats\n)\nSELECT \n    district,\n    refund_rate,\n    revenue_lost\nFROM refund_rates\nORDER BY refund_rate DESC\nLIMIT 1",
+          "answer": "District #24 has the highest refund rate at 6.07% (returned orders / total orders). The revenue lost to those returns was $26,210,601.64.",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "WITH district_stats AS (\n    SELECT \n        g.district,\n        COUNT(CASE WHEN o.order_status = 'returned' THEN 1 END) AS returned_orders,\n        COUNT(*) AS total_orders,\n        SUM(CASE WHEN o.order_status = 'returned' THEN oi.quantity * oi.unit_price - oi.discount_amount ELSE 0 END) AS revenue_lost\n    FROM orders o\n    JOIN geography g ON o.zip = g.zip\n    JOIN order_items oi ON o.order_id = oi.order_id\n    GROUP BY g.district\n),\nrefund_rates AS (\n    SELECT \n        district,\n        returned_orders::FLOAT / total_orders AS refund_rate,\n        revenue_lost\n    FROM district_stats\n)\nSELECT \n    district,\n    refund_rate,\n    revenue_lost\nFROM refund_rates\nORDER BY refund_rate DESC\nLIMIT 1",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query successfully identified the district with the highest refund rate (district #24 with 6.07%) and calculated the associated revenue loss ($26,210,601.64). The logic correctly computes refund rate as returned orders over total orders and aggregates revenue loss from returned items.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    },
+    "vn_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "Tìm quận (district) có tỷ lệ hoàn tiền cao nhất (đơn hàng bị trả lại / tổng số đơn hàng). Chúng ta đã mất bao nhiêu doanh thu từ những khoản trả lại đó",
+          "status": "completed",
+          "sql": "WITH order_stats AS (\n    SELECT \n        g.district,\n        COUNT(CASE WHEN o.order_status = 'returned' THEN 1 END) AS returned_orders,\n        COUNT(o.order_id) AS total_orders,\n        SUM(CASE WHEN o.order_status = 'returned' THEN oi.quantity * oi.unit_price - oi.discount_amount ELSE 0 END) AS returned_revenue\n    FROM orders o\n    JOIN geography g ON o.zip = g.zip\n    JOIN order_items oi ON o.order_id = oi.order_id\n    GROUP BY g.district\n),\ndistrict_ratios AS (\n    SELECT \n        district,\n        returned_orders::FLOAT / total_orders AS return_ratio,\n        returned_revenue\n    FROM order_stats\n)\nSELECT \n    district,\n    return_ratio,\n    returned_revenue\nFROM district_ratios\nORDER BY return_ratio DESC\nLIMIT 1",
+          "answer": "Quận có tỷ lệ hoàn tiền cao nhất là **district #24** với tỷ lệ khoảng **6.07%** (tính bằng số đơn hàng bị trả lại chia cho tổng số đơn hàng).\n\nChúng ta đã mất **26,210,601.64** doanh thu từ những khoản hoàn tiền này.",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "WITH order_stats AS (\n    SELECT \n        g.district,\n        COUNT(CASE WHEN o.order_status = 'returned' THEN 1 END) AS returned_orders,\n        COUNT(o.order_id) AS total_orders,\n        SUM(CASE WHEN o.order_status = 'returned' THEN oi.quantity * oi.unit_price - oi.discount_amount ELSE 0 END) AS returned_revenue\n    FROM orders o\n    JOIN geography g ON o.zip = g.zip\n    JOIN order_items oi ON o.order_id = oi.order_id\n    GROUP BY g.district\n),\ndistrict_ratios AS (\n    SELECT \n        district,\n        returned_orders::FLOAT / total_orders AS return_ratio,\n        returned_revenue\n    FROM order_stats\n)\nSELECT \n    district,\n    return_ratio,\n    returned_revenue\nFROM district_ratios\nORDER BY return_ratio DESC\nLIMIT 1",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query correctly identifies the district with the highest return ratio and calculates the lost revenue from returns. The result shows district #24 has the highest return ratio of approximately 6.07% and the lost revenue from returns is 26,210,601.64.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": 9,
+    "en_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "What is the average sell-through rate of the most heavily discounted product category during the last recorded inventory snapshot",
+          "status": "completed",
+          "sql": "WITH last_snapshot AS (\n    SELECT MAX(snapshot_date) AS snapshot_date\n    FROM inventory\n),\ncategory_discounts AS (\n    SELECT \n        p.category,\n        SUM(oi.discount_amount) / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS discount_rate\n    FROM order_items oi\n    JOIN products p ON oi.product_id = p.product_id\n    GROUP BY p.category\n),\nmost_discounted_category AS (\n    SELECT category\n    FROM category_discounts\n    ORDER BY discount_rate DESC\n    LIMIT 1\n)\nSELECT AVG(i.sell_through_rate) AS avg_sell_through_rate\nFROM inventory i\nJOIN last_snapshot ls ON i.snapshot_date = ls.snapshot_date\nJOIN products p ON i.product_id = p.product_id\nJOIN most_discounted_category mdc ON p.category = mdc.category",
+          "answer": "The average sell-through rate of the most heavily discounted product category during the last recorded inventory snapshot is 0.1183 (or 11.83%).\n\nThis was determined by:\n1. Identifying the product category with the highest overall discount rate across all orders\n2. Finding the most recent inventory snapshot date\n3. Calculating the average sell-through rate for products in that heavily discounted category during that final snapshot period",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "WITH last_snapshot AS (\n    SELECT MAX(snapshot_date) AS snapshot_date\n    FROM inventory\n),\ncategory_discounts AS (\n    SELECT \n        p.category,\n        SUM(oi.discount_amount) / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS discount_rate\n    FROM order_items oi\n    JOIN products p ON oi.product_id = p.product_id\n    GROUP BY p.category\n),\nmost_discounted_category AS (\n    SELECT category\n    FROM category_discounts\n    ORDER BY discount_rate DESC\n    LIMIT 1\n)\nSELECT AVG(i.sell_through_rate) AS avg_sell_through_rate\nFROM inventory i\nJOIN last_snapshot ls ON i.snapshot_date = ls.snapshot_date\nJOIN products p ON i.product_id = p.product_id\nJOIN most_discounted_category mdc ON p.category = mdc.category",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query correctly identifies the most heavily discounted product category and calculates the average sell-through rate for that category during the last recorded inventory snapshot. The result shows a single value (0.1183) which directly answers the question.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    },
+    "vn_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "Tỷ lệ bán thẳng (sell-through rate) trung bình của danh mục sản phẩm được giảm giá mạnh nhất trong lần chụp tồn kho (inventory snapshot) được ghi nhận cuối cùng là bao nhiêu",
+          "status": "completed",
+          "sql": "WITH latest_snapshot AS (\n    SELECT MAX(snapshot_date) AS max_date\n    FROM inventory\n),\ndiscounted_products AS (\n    SELECT \n        oi.product_id,\n        p.category,\n        SUM(oi.discount_amount) / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS discount_rate\n    FROM order_items oi\n    JOIN products p ON oi.product_id = p.product_id\n    JOIN orders o ON oi.order_id = o.order_id\n    JOIN latest_snapshot ls ON o.order_date = ls.max_date\n    GROUP BY oi.product_id, p.category\n    HAVING SUM(oi.quantity * oi.unit_price) > 0\n),\nmax_discount_category AS (\n    SELECT category\n    FROM discounted_products\n    ORDER BY discount_rate DESC\n    LIMIT 1\n)\nSELECT AVG(i.sell_through_rate) AS avg_sell_through_rate\nFROM inventory i\nJOIN products p ON i.product_id = p.product_id\nJOIN max_discount_category mdc ON p.category = mdc.category\nWHERE i.snapshot_date = (SELECT max_date FROM latest_snapshot)",
+          "answer": "Tỷ lệ bán thẳng (sell-through rate) trung bình của danh mục sản phẩm được giảm giá mạnh nhất trong lần chụp tồn kho cuối cùng là 0.1183 (tương đương khoảng 11.83%).",
+          "error": null,
+          "attempt_count": 1,
+          "attempts": [
+            {
+              "sql": "WITH latest_snapshot AS (\n    SELECT MAX(snapshot_date) AS max_date\n    FROM inventory\n),\ndiscounted_products AS (\n    SELECT \n        oi.product_id,\n        p.category,\n        SUM(oi.discount_amount) / NULLIF(SUM(oi.quantity * oi.unit_price), 0) AS discount_rate\n    FROM order_items oi\n    JOIN products p ON oi.product_id = p.product_id\n    JOIN orders o ON oi.order_id = o.order_id\n    JOIN latest_snapshot ls ON o.order_date = ls.max_date\n    GROUP BY oi.product_id, p.category\n    HAVING SUM(oi.quantity * oi.unit_price) > 0\n),\nmax_discount_category AS (\n    SELECT category\n    FROM discounted_products\n    ORDER BY discount_rate DESC\n    LIMIT 1\n)\nSELECT AVG(i.sell_through_rate) AS avg_sell_through_rate\nFROM inventory i\nJOIN products p ON i.product_id = p.product_id\nJOIN max_discount_category mdc ON p.category = mdc.category\nWHERE i.snapshot_date = (SELECT max_date FROM latest_snapshot)",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query correctly identifies the latest inventory snapshot date, calculates discount rates by category, finds the category with the highest discount rate, and computes the average sell-through rate for that category during the latest snapshot. The result provides the requested average sell-through rate.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": 10,
+    "en_ans": {
+      "status": "completed",
+      "sections": [
+        {
+          "title": "We are looking at people who signed up in 2018. Which source gives us the most loyal buyers (most orders per person), and what color of clothing do they like to buy most?",
+          "status": "completed",
+          "sql": "WITH customers_2018 AS (\n    SELECT \n        customer_id,\n        acquisition_channel\n    FROM customers\n    WHERE signup_date >= '2018-01-01' AND signup_date <= '2018-12-31'\n),\ncustomer_orders AS (\n    SELECT \n        c.customer_id,\n        c.acquisition_channel,\n        COUNT(o.order_id) AS total_orders\n    FROM customers_2018 c\n    JOIN orders o ON c.customer_id = o.customer_id\n    GROUP BY c.customer_id, c.acquisition_channel\n),\nchannel_avg_orders AS (\n    SELECT \n        acquisition_channel,\n        AVG(total_orders) AS avg_orders_per_person\n    FROM customer_orders\n    GROUP BY acquisition_channel\n),\ntop_channel AS (\n    SELECT acquisition_channel\n    FROM channel_avg_orders\n    ORDER BY avg_orders_per_person DESC\n    LIMIT 1\n),\ntop_channel_customers AS (\n    SELECT co.customer_id\n    FROM customer_orders co\n    JOIN top_channel tc ON co.acquisition_channel = tc.acquisition_channel\n),\ncustomer_colors AS (\n    SELECT \n        p.color,\n        SUM(oi.quantity) AS total_quantity\n    FROM top_channel_customers tc\n    JOIN orders o ON tc.customer_id = o.customer_id\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN products p ON oi.product_id = p.product_id\n    WHERE p.category IN ('streetwear', 'outdoor', 'casual', 'genz')\n    GROUP BY p.color\n)\nSELECT \n    tc.acquisition_channel AS source,\n    cc.color AS favorite_color\nFROM top_channel tc\nCROSS JOIN (\n    SELECT color\n    FROM customer_colors\n    ORDER BY total_quantity DESC\n    LIMIT 1\n) cc",
+          "answer": "Based on the analysis of customers who signed up in 2018:\n\nThe most loyal buyers (those with the highest average number of orders per person) came from the \"direct\" acquisition channel.\n\nThese customers tend to purchase products in the color \"purple\" most frequently.",
+          "error": null,
+          "attempt_count": 2,
+          "attempts": [
+            {
+              "sql": "WITH customers_2018 AS (\n    SELECT \n        customer_id,\n        acquisition_channel\n    FROM customers\n    WHERE signup_date >= '2018-01-01' AND signup_date <= '2018-12-31'\n),\ncustomer_orders AS (\n    SELECT \n        c.customer_id,\n        c.acquisition_channel,\n        COUNT(o.order_id) AS total_orders\n    FROM customers_2018 c\n    JOIN orders o ON c.customer_id = o.customer_id\n    GROUP BY c.customer_id, c.acquisition_channel\n),\nchannel_avg_orders AS (\n    SELECT \n        acquisition_channel,\n        AVG(total_orders) AS avg_orders_per_person\n    FROM customer_orders\n    GROUP BY acquisition_channel\n),\ntop_channel AS (\n    SELECT acquisition_channel\n    FROM channel_avg_orders\n    ORDER BY avg_orders_per_person DESC\n    LIMIT 1\n),\ntop_channel_customers AS (\n    SELECT co.customer_id\n    FROM customer_orders co\n    JOIN top_channel tc ON co.acquisition_channel = tc.acquisition_channel\n),\ncustomer_colors AS (\n    SELECT \n        tc.customer_id,\n        p.color,\n        SUM(oi.quantity) AS total_quantity\n    FROM top_channel_customers tc\n    JOIN orders o ON tc.customer_id = o.customer_id\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN products p ON oi.product_id = p.product_id\n    WHERE p.category = 'clothing'\n    GROUP BY tc.customer_id, p.color\n)\nSELECT \n    tc.acquisition_channel AS source,\n    cc.color AS favorite_color\nFROM top_channel tc\nCROSS JOIN (\n    SELECT color\n    FROM customer_colors\n    GROUP BY color\n    ORDER BY SUM(total_quantity) DESC\n    LIMIT 1\n) cc",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query returned no results. This is likely because there are no products with category 'clothing' in the products table. Looking at the schema, the actual categories are 'streetwear', 'outdoor', 'casual', and 'genz'. The query should use one of these valid categories instead of 'clothing'.",
+              "satisfied": false
+            },
+            {
+              "sql": "WITH customers_2018 AS (\n    SELECT \n        customer_id,\n        acquisition_channel\n    FROM customers\n    WHERE signup_date >= '2018-01-01' AND signup_date <= '2018-12-31'\n),\ncustomer_orders AS (\n    SELECT \n        c.customer_id,\n        c.acquisition_channel,\n        COUNT(o.order_id) AS total_orders\n    FROM customers_2018 c\n    JOIN orders o ON c.customer_id = o.customer_id\n    GROUP BY c.customer_id, c.acquisition_channel\n),\nchannel_avg_orders AS (\n    SELECT \n        acquisition_channel,\n        AVG(total_orders) AS avg_orders_per_person\n    FROM customer_orders\n    GROUP BY acquisition_channel\n),\ntop_channel AS (\n    SELECT acquisition_channel\n    FROM channel_avg_orders\n    ORDER BY avg_orders_per_person DESC\n    LIMIT 1\n),\ntop_channel_customers AS (\n    SELECT co.customer_id\n    FROM customer_orders co\n    JOIN top_channel tc ON co.acquisition_channel = tc.acquisition_channel\n),\ncustomer_colors AS (\n    SELECT \n        p.color,\n        SUM(oi.quantity) AS total_quantity\n    FROM top_channel_customers tc\n    JOIN orders o ON tc.customer_id = o.customer_id\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN products p ON oi.product_id = p.product_id\n    WHERE p.category IN ('streetwear', 'outdoor', 'casual', 'genz')\n    GROUP BY p.color\n)\nSELECT \n    tc.acquisition_channel AS source,\n    cc.color AS favorite_color\nFROM top_channel tc\nCROSS JOIN (\n    SELECT color\n    FROM customer_colors\n    ORDER BY total_quantity DESC\n    LIMIT 1\n) cc",
+              "status": "completed",
+              "error": null,
+              "review_reason": "The query successfully returned the acquisition channel with the highest average orders per person for customers who signed up in 2018 ('direct') and the color of clothing items they purchase most ('purple'). The query correctly identified valid product categories and aggregated the data appropriately.",
+              "satisfied": true
+            }
+          ]
+        }
+      ]
+    },
+    "vn_ans": {
+      "status": "failed",
+      "sections": [
+        {
+          "title": "Chúng ta đang xem xét những người đã đăng ký vào năm 2018. Nguồn (source) nào mang lại cho chúng ta những người mua trung thành nhất (nhiều đơn hàng nhất mỗi người), và màu sắc đồ họ thích mua nhất là gì",
+          "status": "failed",
+          "sql": "WITH customers_2018 AS (\n    SELECT DISTINCT customer_id, order_source\n    FROM orders\n    WHERE EXTRACT(YEAR FROM order_date) = 2018\n),\ncustomer_order_counts AS (\n    SELECT \n        c.order_source,\n        c.customer_id,\n        COUNT(o.order_id) AS total_orders\n    FROM customers_2018 c\n    JOIN orders o ON c.customer_id = o.customer_id\n    WHERE EXTRACT(YEAR FROM o.order_date) = 2018\n    GROUP BY c.order_source, c.customer_id\n),\navg_orders_per_source AS (\n    SELECT \n        order_source,\n        AVG(total_orders) AS avg_orders\n    FROM customer_order_counts\n    GROUP BY order_source\n),\nloyal_source AS (\n    SELECT order_source\n    FROM avg_orders_per_source\n    ORDER BY avg_orders DESC\n    LIMIT 1\n),\ncolor_purchases AS (\n    SELECT \n        o.order_source,\n        p.color,\n        COUNT(*) as purchase_count\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN products p ON oi.product_id = p.product_id\n    WHERE o.customer_id IN (SELECT customer_id FROM customers_2018)\n      AND EXTRACT(YEAR FROM o.order_date) = 2018\n      AND o.order_source = (SELECT order_source FROM loyal_source)\n    GROUP BY o.order_source, p.color\n)\nSELECT \n    ls.order_source AS source,\n    cp.color AS favorite_color\nFROM loyal_source ls\nJOIN color_purchases cp ON ls.order_source = cp.order_source\nORDER BY cp.purchase_count DESC\nLIMIT 1",
+          "answer": "I apologize, but I'm unable to provide the exact answer to your question due to limitations in the available data schema. The main issue is that the database schema doesn't include an explicit customer registration date field, nor does it have an order_date field that I can access directly.\n\nTo properly answer your question about customers who registered in 2018, I would need either:\n1. A customer registration date field in the customers table\n2. An order_date field in the orders table (which appears to exist based on the schema description but isn't accessible in the current context)\n\nWithout these fields, I cannot accurately:\n- Identify customers who specifically registered in 2018\n- Calculate the average number of orders per customer by source for that specific group\n- Determine the favorite colors of customers from the most loyal source\n\nIf you could provide access to the order_date field or a customer registration date field, I would be able to construct the appropriate query to answer your question.",
+          "error": "The query continues to reference 'order_date' which is not available in the provided schema context. This is causing a validation error. We need to work within the constraints of the schema provided.",
+          "attempt_count": 3,
+          "attempts": [
+            {
+              "sql": "WITH customers_2018 AS (\n    SELECT customer_id, order_source\n    FROM orders\n    WHERE EXTRACT(YEAR FROM order_date) = 2018\n    GROUP BY customer_id, order_source\n),\ncustomer_order_counts AS (\n    SELECT \n        c.order_source,\n        c.customer_id,\n        COUNT(o.order_id) AS order_count\n    FROM customers_2018 c\n    JOIN orders o ON c.customer_id = o.customer_id\n    GROUP BY c.order_source, c.customer_id\n),\navg_orders_by_source AS (\n    SELECT \n        order_source,\n        AVG(order_count) AS avg_orders_per_customer\n    FROM customer_order_counts\n    GROUP BY order_source\n),\ntop_source AS (\n    SELECT order_source\n    FROM avg_orders_by_source\n    ORDER BY avg_orders_per_customer DESC\n    LIMIT 1\n),\ncolor_preferences AS (\n    SELECT \n        o.order_source,\n        p.color,\n        COUNT(*) AS color_count\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN products p ON oi.product_id = p.product_id\n    WHERE EXTRACT(YEAR FROM o.order_date) = 2018\n    GROUP BY o.order_source, p.color\n),\ntop_color AS (\n    SELECT \n        cp.order_source,\n        cp.color\n    FROM color_preferences cp\n    JOIN top_source ts ON cp.order_source = ts.order_source\n    ORDER BY cp.color_count DESC\n    LIMIT 1\n)\nSELECT \n    ts.order_source AS source,\n    tc.color AS favorite_color\nFROM top_source ts\nCROSS JOIN top_color tc",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query incorrectly assumes that customers registered in 2018 are those who placed their first order in 2018. However, there's no registration date field available in the schema. Additionally, the approach to find the most loyal customers (by average orders per customer) and their favorite colors could be simplified.",
+              "satisfied": false
+            },
+            {
+              "sql": "WITH first_orders_2018 AS (\n    SELECT \n        customer_id,\n        order_source,\n        MIN(order_date) AS first_order_date\n    FROM orders\n    WHERE EXTRACT(YEAR FROM order_date) = 2018\n    GROUP BY customer_id, order_source\n),\ncustomer_total_orders AS (\n    SELECT \n        fo.order_source,\n        fo.customer_id,\n        COUNT(o.order_id) AS total_orders\n    FROM first_orders_2018 fo\n    JOIN orders o ON fo.customer_id = o.customer_id\n    GROUP BY fo.order_source, fo.customer_id\n),\navg_orders_by_source AS (\n    SELECT \n        order_source,\n        AVG(total_orders) AS avg_orders_per_customer\n    FROM customer_total_orders\n    GROUP BY order_source\n),\nmost_loyal_source AS (\n    SELECT order_source\n    FROM avg_orders_by_source\n    ORDER BY avg_orders_per_customer DESC\n    LIMIT 1\n),\ncolor_counts_for_loyal_source AS (\n    SELECT \n        p.color,\n        COUNT(*) AS color_count\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN products p ON oi.product_id = p.product_id\n    WHERE o.customer_id IN (\n        SELECT customer_id \n        FROM first_orders_2018 \n        WHERE order_source = (SELECT order_source FROM most_loyal_source)\n    )\n    GROUP BY p.color\n),\nfavorite_color AS (\n    SELECT color\n    FROM color_counts_for_loyal_source\n    ORDER BY color_count DESC\n    LIMIT 1\n)\nSELECT \n    mls.order_source AS source,\n    fc.color AS favorite_color\nFROM most_loyal_source mls\nCROSS JOIN favorite_color fc",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query still incorrectly assumes customers registered in 2018 are those with first orders in 2018, which isn't explicitly supported by the schema. More importantly, it's overly complex with multiple CTEs when a simpler approach would suffice. The logic for finding the favorite color is also inefficient.",
+              "satisfied": false
+            },
+            {
+              "sql": "WITH customers_2018 AS (\n    SELECT DISTINCT customer_id, order_source\n    FROM orders\n    WHERE EXTRACT(YEAR FROM order_date) = 2018\n),\ncustomer_order_counts AS (\n    SELECT \n        c.order_source,\n        c.customer_id,\n        COUNT(o.order_id) AS total_orders\n    FROM customers_2018 c\n    JOIN orders o ON c.customer_id = o.customer_id\n    WHERE EXTRACT(YEAR FROM o.order_date) = 2018\n    GROUP BY c.order_source, c.customer_id\n),\navg_orders_per_source AS (\n    SELECT \n        order_source,\n        AVG(total_orders) AS avg_orders\n    FROM customer_order_counts\n    GROUP BY order_source\n),\nloyal_source AS (\n    SELECT order_source\n    FROM avg_orders_per_source\n    ORDER BY avg_orders DESC\n    LIMIT 1\n),\ncolor_purchases AS (\n    SELECT \n        o.order_source,\n        p.color,\n        COUNT(*) as purchase_count\n    FROM orders o\n    JOIN order_items oi ON o.order_id = oi.order_id\n    JOIN products p ON oi.product_id = p.product_id\n    WHERE o.customer_id IN (SELECT customer_id FROM customers_2018)\n      AND EXTRACT(YEAR FROM o.order_date) = 2018\n      AND o.order_source = (SELECT order_source FROM loyal_source)\n    GROUP BY o.order_source, p.color\n)\nSELECT \n    ls.order_source AS source,\n    cp.color AS favorite_color\nFROM loyal_source ls\nJOIN color_purchases cp ON ls.order_source = cp.order_source\nORDER BY cp.purchase_count DESC\nLIMIT 1",
+              "status": "validation_error",
+              "error": "SQL references tables outside context: order_date.",
+              "review_reason": "The query continues to reference 'order_date' which is not available in the provided schema context. This is causing a validation error. We need to work within the constraints of the schema provided.",
+              "satisfied": false
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

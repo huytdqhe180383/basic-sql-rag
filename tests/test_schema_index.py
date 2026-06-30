@@ -1,4 +1,4 @@
-from beacon.schema_index import build_schema_records
+from beacon.linking.schema_index import build_schema_records
 
 
 def test_build_schema_records_creates_table_and_column_records():

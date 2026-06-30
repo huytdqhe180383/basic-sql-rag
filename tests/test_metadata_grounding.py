@@ -1,13 +1,13 @@
 """Tests for semantic metadata and value grounding."""
 
-from beacon.indexing_tools import load_semantic_model
-from beacon.metadata_grounding import (
+from beacon.indexing.profiles import load_semantic_model
+from beacon.linking.metadata_grounding import (
     apply_grounding_to_needs,
     ground_question_metadata,
     score_grounding_candidates,
 )
-from beacon import retrieval
-from beacon.retrieval import build_prompt
+from beacon.linking import retrieval
+from beacon.linking.retrieval import build_prompt
 from beacon.retrieval_tools import extract_question_needs
 
 

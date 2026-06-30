@@ -1,58 +1,49 @@
 # Beacon Evaluation Notes
 
-Last updated: 2026-06-24.
+Last updated: 2026-06-30.
 
 ## Commands
 
-Run from the repo root:
+Run from the repository root:
 
 ```powershell
-$env:PYTHONPATH = "src"
-$env:BEACON_USE_HASH_EMBEDDINGS = "1"
-pytest tests -q
-python -m beacon.indexing
-python "tests\test cases\run_master_plan_tests.py"
-python "tests\test cases\generate_report.py"
+uv run pytest tests -q
+uv run beacon-index
+uv run python tests/test_cases/run_master_plan_tests.py
+uv run python tests/test_cases/generate_report.py
 ```
 
-## Unit And Smoke Tests
+The 10-question runner writes `tests/test_results/master_plan_evaluation_results.json`. The HTML renderer writes `tests/test_results/report.html`.
 
-Latest focused test run:
+## Focused Tests
 
-- `47 passed`
-- Command: `pytest tests -q`
+The focused test suite covers retrieval, semantic profiles, prompting, SQL validation, dynamic retry, feedback examples, schema graph behavior, vector storage, and smoke-level pipeline behavior.
 
-Latest local index build:
+The current report preserves the previous focused-test note of `47 passed`. Run `uv run pytest tests -q` before publishing a new measured test count.
 
-- Command: `python -m beacon.indexing`
-- Result: `Built local schema vectors.`
+## Latest 10-Question Rerun
 
-## English 10-Question Result
+The latest rerun was executed on 2026-06-30 with:
 
-The last complete model-backed English run completed all 10 English questions:
+```powershell
+uv run python tests/test_cases/run_master_plan_tests.py
+uv run python tests/test_cases/generate_report.py
+```
 
-- Execution status: `10 / 10 completed`
-- Strict manual semantic review: `9 / 10 fully correct`
-- Main caveat: Q9 executed, but used average `discount_amount` as the discount basis. The metadata and examples were then updated to teach discount rate as `discount_amount / NULLIF(quantity * unit_price, 0)`.
+The English run produced 7 completed questions and 3 top-level API/model-channel errors. The errors were external `503 model_not_found` responses for `qwen3-coder-480b-a35b-instruct` under the configured proxy group.
 
-After that Q9 fix, a final rerun completed Q1-Q5 but the configured API account ran out of quota at Q6:
+The Vietnamese run produced 6 completed questions, 2 failed questions, and 2 top-level API/model-channel errors. The failures are recorded in `tests/test_results/master_plan_evaluation_results.json`; the visible pattern is schema-context validation around `order_date` on the affected Vietnamese questions.
 
-- Completed before quota: Q1-Q5 English, `5 / 5`
-- Blocked by API quota: Q6-Q10 English and Vietnamese
-- Error: `403 insufficient_user_quota`
+Because the latest rerun includes external model-channel errors, it should be treated as the latest pipeline run record, not as a clean semantic-accuracy measurement.
 
-Because the last run was externally blocked, do not treat the partial `tests/test results/master_plan_evaluation_results.json` as an accuracy regression.
+## Best Recorded Result
 
-## Strict Review Notes
+The best achieved benchmark-planning result is 55% accuracy on the BIRD-dev set.
 
-Validated improvements in the complete run and follow-up diagnostics:
+This result is separate from the local 10-question e-commerce run. The BIRD-dev note is useful because it shows the next method pressure point: table recall can become strong, but schema focus, projection discipline, and output exactness still matter.
 
-- Q2 now uses the latest inventory snapshot before excluding `overstock_flag = TRUE`.
-- Q3 now preserves the dependent time phrase and computes total period COGS from `sales.cogs`.
-- Q6 no longer fails on `generate_series`; the validator recognizes it as a safe PostgreSQL table-valued function.
-- Q7 and Q10 stay as single dependent sections, so filters are not dropped during question splitting.
-- Q9 retrieval now ranks the `latest_snapshot_discount_rate` example first after the metadata/example update.
+## Historical 10-Question Note
 
-Remaining limitation:
+An earlier complete English run finished all 10 English questions and was manually judged 9/10 fully correct. The main caveat was Q9, where the SQL used average `discount_amount` as the discount basis. Metadata and examples were then updated to teach discount rate as `discount_amount / NULLIF(quantity * unit_price, 0)`.
 
-- The final Q9 SQL after the discount-rate fix could not be fully measured because the LLM API quota was exhausted.
+That historical result remains useful as a sanity check, while the 2026-06-30 JSON/HTML files are the latest generated artifacts.

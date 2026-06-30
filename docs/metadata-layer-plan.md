@@ -14,11 +14,16 @@ Keep the implementation small, readable, and easy to change. Prefer plain dictio
 ### Keep The Existing Shape
 - Keep `data/semantic_model/*.json` as the main source of schema metadata.
 - Keep `data/few_shot_queries.json` as the main source of example SQL.
-- Keep the current runtime modules:
-  - `src/beacon/indexing.py` builds schema and example documents.
-  - `src/beacon/retrieval.py` finds relevant schema and examples.
-  - `src/beacon/pipeline.py` assembles the prompt and runs the SQL flow.
-- Preserve the current root commands and package entrypoints.
+- Keep the current root commands and package entrypoints:
+  - `python -m beacon.indexing`
+  - `python -m beacon.pipeline`
+  - `python -m beacon.ui`
+  - `python -m beacon.load_db`
+- Keep implementation details inside the ordered source layers:
+  - `src/beacon/indexing/` builds schema/example documents and local vectors.
+  - `src/beacon/linking/` finds relevant schema, values, joins, and examples.
+  - `src/beacon/runtime/` assembles prompts, validates SQL, executes SQL, and handles retry.
+  - `src/beacon/app/` keeps UI and local database loading code.
 
 ### Improve Metadata Where It Helps Retrieval
 - Make table and column descriptions clearer when they are vague.
@@ -63,9 +68,9 @@ Do not add these in this pass:
 If the simple approach fails on concrete questions, revisit one improvement at a time.
 
 ## Interfaces
-- `indexing.py` should continue to expose simple helpers for loading semantic files and building schema/example docs.
-- `retrieval.py` should continue to return plain dict/list data that `pipeline.py` can use directly.
-- `pipeline.py` should not need a major rewrite for metadata changes.
+- `beacon.indexing` should continue to expose simple helpers for building local retrieval artifacts.
+- `beacon.linking.retrieval` should continue to return plain dict/list data that `beacon.runtime.pipeline` can use directly.
+- Root modules such as `beacon.pipeline` and `beacon.retrieval` should remain thin compatibility entrypoints.
 - Any new metadata fields should be optional so older table JSON files still load cleanly.
 - Keep all new structures JSON-friendly and easy to inspect by hand.
 

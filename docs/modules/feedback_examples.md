@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`src/beacon/feedback_examples.py` saves accepted SQL attempts as candidate examples for future few-shot use.
+`src/beacon/runtime/feedback_examples.py` saves accepted SQL attempts as candidate examples for future few-shot use.
 
 ## Inputs
 
@@ -22,15 +22,7 @@ A deduplicated JSON candidate in `data/example_candidates.json` when `BEACON_SAV
 
 ## Diagram
 
-```mermaid
-flowchart TD
-    A["Accepted SQL attempt"] --> B["Build candidate metadata"]
-    C["Linked context"] --> B
-    D["Result summary"] --> B
-    B --> E["Fingerprint question + SQL"]
-    E --> F["Deduplicate"]
-    F --> G["example_candidates.json"]
-```
+![modules_feedback_examples_diagram_1](../diagram/modules_feedback_examples_1.png)
 
 ## Failure Behavior
 

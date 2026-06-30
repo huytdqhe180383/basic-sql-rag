@@ -1,8 +1,10 @@
-psycopg2-binary
-python-dotenv
-openai
-gradio
-llama-index
-llama-index-embeddings-openai
-numpy
-sentence-transformers
+# Compatibility export for agents or shells that cannot use uv yet.
+# Prefer `uv sync --extra dev` from pyproject.toml for local development.
+gradio>=5.50
+llama-index>=0.14
+llama-index-embeddings-openai>=0.6
+numpy>=2.4
+openai>=2.30
+psycopg2-binary>=2.9
+python-dotenv>=1.2
+sentence-transformers>=5.4

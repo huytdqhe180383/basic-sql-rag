@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`src/beacon/metadata_grounding.py` maps user terms to exact database values, tables, and columns using semantic profiles and aliases.
+`src/beacon/linking/metadata_grounding.py` maps user terms to exact database values, tables, and columns using semantic profiles and aliases.
 
 ## Inputs
 
@@ -22,18 +22,7 @@ A list of evidence dictionaries. Each evidence item includes the term, table, co
 
 ## Diagram
 
-```mermaid
-flowchart TD
-    A["Original question"] --> B["Normalize text"]
-    C["Semantic profiles and aliases"] --> D["Grounding candidates"]
-    B --> D
-    D --> E["Score candidates"]
-    E --> F{"Clear winner?"}
-    F -->|Yes| G["Pinned evidence"]
-    F -->|No| H["Ambiguous or advisory evidence"]
-    G --> I["Prompt evidence and schema pinning"]
-    H --> J["Prompt evidence only"]
-```
+![modules_metadata_grounding_diagram_1](../diagram/modules_metadata_grounding_1.png)
 
 ## Failure Behavior
 
