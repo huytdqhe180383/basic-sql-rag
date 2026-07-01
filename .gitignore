@@ -1,6 +1,7 @@
 .env
 __pycache__/
 *.pyc
+~$*.docx
 .pytest_cache/
 .pytest_tmp/
 .venv/
@@ -24,3 +25,5 @@ docs/reports/beacon_method_report_expanded_method.*
 docs/reports/beacon_method_report_revised_method.*
 docs/reports/beacon_method_report_polished.*
 docs/reports/beacon_method_report_final.*
+docs/reports/beacon_method_report_submission.docx
+docs/reports/beacon_method_report_submission.pdf

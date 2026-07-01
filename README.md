@@ -10,7 +10,7 @@ Start with `setup.md` if the machine is new. It covers PostgreSQL, `uv`, the `.e
 
 Use `docs/source_layout.md` as the codebase map. Use `docs/pipeline.md` for the compact pipeline diagram, `docs/pipeline_deep_dive.md` for the deeper runtime explanation, and `docs/evaluation.md` for the latest test and evaluation notes.
 
-The submission-ready method report is generated at `docs/reports/beacon_method_report_submission.docx` and `docs/reports/beacon_method_report_submission.pdf`.
+The submission-ready method report is generated at `docs/reports/beacon_method_report_submission_repo_paths.docx` and `docs/reports/beacon_method_report_submission_repo_paths.pdf`.
 
 ## Prerequisites
 

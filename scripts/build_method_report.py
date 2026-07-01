@@ -41,8 +41,8 @@ from reportlab.platypus import (
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "docs" / "reports"
-DOCX_PATH = OUT_DIR / "beacon_method_report_submission.docx"
-PDF_PATH = OUT_DIR / "beacon_method_report_submission.pdf"
+DOCX_PATH = OUT_DIR / "beacon_method_report_submission_repo_paths.docx"
+PDF_PATH = OUT_DIR / "beacon_method_report_submission_repo_paths.pdf"
 EXTRACTED_IMAGE_DIR = OUT_DIR / "extracted_images"
 CURRENT_PIPELINE_DIAGRAM = EXTRACTED_IMAGE_DIR / "current_pipeline.png"
 METHOD_LAYER_DIAGRAM = EXTRACTED_IMAGE_DIR / "method_layers.png"
@@ -51,6 +51,7 @@ RETRY_LOOP_DIAGRAM = EXTRACTED_IMAGE_DIR / "sql_attempt_loop.png"
 TEST_RESULTS_DIR = ROOT / "tests" / "test_results"
 TEST_RESULTS_JSON = TEST_RESULTS_DIR / "master_plan_evaluation_results.json"
 TEST_RESULTS_HTML = TEST_RESULTS_DIR / "report.html"
+TEST_RESULTS_REPO_PATH = "tests/test_results/"
 
 
 INK = RGBColor(0x1F, 0x29, 0x37)
@@ -1264,7 +1265,7 @@ def add_docx_report() -> None:
     )
     p = doc.add_paragraph()
     add_formatted_runs(p, "Latest run artifacts folder: ")
-    add_external_hyperlink(p, str(TEST_RESULTS_DIR), TEST_RESULTS_DIR.resolve().as_uri() + "/")
+    add_external_hyperlink(p, TEST_RESULTS_REPO_PATH, TEST_RESULTS_REPO_PATH)
     add_docx_table(
         doc,
         ["Evidence", "Current status", "Notes"],
@@ -1730,10 +1731,9 @@ def add_pdf_report() -> None:
             styles["BodyCustom"],
         )
     )
-    folder_uri = TEST_RESULTS_DIR.resolve().as_uri() + "/"
     story.append(
         raw_para(
-            f'Latest run artifacts folder: <link href="{html.escape(folder_uri)}" color="#2E74B5">{html.escape(str(TEST_RESULTS_DIR))}</link>',
+            f'Latest run artifacts folder: <link href="{html.escape(TEST_RESULTS_REPO_PATH)}" color="#2E74B5">{html.escape(TEST_RESULTS_REPO_PATH)}</link>',
             styles["BodyCustom"],
         )
     )
